@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self'; img-src 'self' data:; connect-src 'self' https://sheets.googleapis.com https://accounts.google.com; frame-src https://accounts.google.com;"
+    />
+    <title>Annual Expense Tracker</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <div>
+          <p class="eyebrow">Annual Expense Tracker</p>
+          <h1>Track expenses and balance across the year</h1>
+        </div>
+        <div class="month-select">
+          <label for="monthSelect">Month</label>
+          <select id="monthSelect" aria-label="Select month"></select>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="card">
+          <h2>Income</h2>
+          <form id="incomeForm" class="inline-form">
+            <input
+              id="incomeAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              aria-label="Income amount"
+            />
+            <button type="submit">Save</button>
+          </form>
+          <p class="hint" id="incomeStatus"></p>
+        </div>
+
+        <div class="card">
+          <h2>Month Summary</h2>
+          <div class="summary">
+            <div>
+              <span>Total Expenses</span>
+              <strong id="monthTotal">$0.00</strong>
+            </div>
+            <div>
+              <span>Balance</span>
+              <strong id="monthBalance">$0.00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Year Snapshot</h2>
+          <div class="summary">
+            <div>
+              <span>Yearly Income</span>
+              <strong id="yearIncome">$0.00</strong>
+            </div>
+            <div>
+              <span>Yearly Expenses</span>
+              <strong id="yearExpense">$0.00</strong>
+            </div>
+            <div>
+              <span>Yearly Balance</span>
+              <strong id="yearBalance">$0.00</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Expenses</h2>
+          <form id="expenseForm" class="expense-form">
+            <input
+              id="expenseName"
+              type="text"
+              placeholder="Expense name"
+              maxlength="120"
+              required
+            />
+            <input
+              id="expenseAmount"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Amount"
+              required
+            />
+            <select id="expenseCategory" aria-label="Expense category"></select>
+            <label class="checkbox">
+              <input id="expenseCompleted" type="checkbox" />
+              Completed
+            </label>
+            <button type="submit">Add</button>
+          </form>
+        </div>
+        <p class="hint" id="expenseStatus"></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Expense</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Completed</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="expenseTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Year Analysis</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody id="analysisTable"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="analysisNote"></p>
+      </section>
+
+      <section class="card">
+        <h2>Google Sheets Backup</h2>
+        <p class="hint">
+          Data stays on this device in IndexedDB. Use this section to back up
+          to a Google Sheet you own.
+        </p>
+        <form id="backupForm" class="backup-form">
+          <input
+            id="googleClientId"
+            type="text"
+            placeholder="Google OAuth Client ID"
+            autocomplete="off"
+          />
+          <input
+            id="spreadsheetId"
+            type="text"
+            placeholder="Spreadsheet ID"
+            autocomplete="off"
+          />
+          <input
+            id="expensesSheet"
+            type="text"
+            placeholder="Expenses sheet name (default: Expenses)"
+            autocomplete="off"
+          />
+          <input
+            id="incomeSheet"
+            type="text"
+            placeholder="Income sheet name (default: Income)"
+            autocomplete="off"
+          />
+          <div class="backup-actions">
+            <button type="button" id="connectGoogle">Connect Google</button>
+            <button type="submit">Backup Now</button>
+          </div>
+        </form>
+        <p class="hint" id="backupStatus"></p>
+      </section>
+    </main>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
