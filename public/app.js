@@ -60,6 +60,10 @@ const importIncome = document.getElementById('importIncome');
 const importExpensesBtn = document.getElementById('importExpensesBtn');
 const importIncomeBtn = document.getElementById('importIncomeBtn');
 const importStatus = document.getElementById('importStatus');
+const incomeDictate = document.getElementById('incomeDictate');
+const expenseDictate = document.getElementById('expenseDictate');
+const incomeDictationStatus = document.getElementById('incomeDictationStatus');
+const expenseDictationStatus = document.getElementById('expenseDictationStatus');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
@@ -67,6 +71,7 @@ let dbPromise;
 let tokenClient;
 let googleAccessToken = null;
 let autoBackupTimer;
+let activeRecognition = null;
 
 function formatCurrency(value) {
   const number = Number(value || 0);
@@ -416,6 +421,116 @@ function updateBackupStatus(message, isError = false) {
 
 function updateImportStatus(message, isError = false) {
   setStatus(importStatus, message, isError);
+}
+
+function updateDictationStatus(el, message, isError = false) {
+  setStatus(el, message, isError);
+}
+
+function getSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return null;
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  return recognition;
+}
+
+function normalizeWords(text) {
+  return text
+    .toLowerCase()
+    .replace(/[.,!?]/g, '')
+    .trim();
+}
+
+function parseExpenseDictation(text) {
+  const normalized = normalizeWords(text);
+  const words = normalized.split(/\s+/);
+  const amountMatch = normalized.match(/\\d+(?:\\.\\d+)?/);
+  const amount = amountMatch ? Number(amountMatch[0]) : null;
+
+  const category = CATEGORIES.find((cat) => normalized.includes(cat.toLowerCase()));
+  const completed = normalized.includes('completed') || normalized.includes('paid') || normalized.includes('done');
+
+  const filteredWords = words.filter((word) => {
+    if (amountMatch && word === amountMatch[0]) return false;
+    if (category && category.toLowerCase() === word) return false;
+    if (['completed', 'paid', 'done'].includes(word)) return false;
+    return true;
+  });
+
+  const name = filteredWords.join(' ').trim();
+
+  return {
+    name: name || text.trim(),
+    amount,
+    category: category || expenseCategory.value,
+    completed,
+  };
+}
+
+function parseIncomeDictation(text) {
+  const amountMatch = text.match(/\\d+(?:\\.\\d+)?/);
+  const amount = amountMatch ? Number(amountMatch[0]) : null;
+  return amount;
+}
+
+function stopActiveRecognition() {
+  if (activeRecognition) {
+    activeRecognition.stop();
+    activeRecognition = null;
+  }
+}
+
+function startDictation({ target, button, statusEl }) {
+  const recognition = getSpeechRecognition();
+  if (!recognition) {
+    updateDictationStatus(statusEl, 'Speech recognition not supported in this browser.', true);
+    return;
+  }
+
+  stopActiveRecognition();
+  activeRecognition = recognition;
+
+  button.classList.add('listening');
+  updateDictationStatus(statusEl, 'Listening...');
+
+  recognition.onresult = (event) => {
+    const transcript = event.results?.[0]?.[0]?.transcript || '';
+    button.classList.remove('listening');
+    updateDictationStatus(statusEl, `Heard: "${transcript}"`);
+
+    if (target === 'income') {
+      const amount = parseIncomeDictation(transcript);
+      if (amount === null || Number.isNaN(amount)) {
+        updateDictationStatus(statusEl, 'Could not find an income amount in the dictation.', true);
+        return;
+      }
+      incomeAmount.value = amount.toFixed(2);
+      return;
+    }
+
+    const parsed = parseExpenseDictation(transcript);
+    expenseName.value = parsed.name;
+    if (parsed.amount !== null && !Number.isNaN(parsed.amount)) {
+      expenseAmount.value = String(parsed.amount);
+    }
+    expenseCategory.value = parsed.category;
+    expenseCompleted.checked = parsed.completed;
+  };
+
+  recognition.onerror = (event) => {
+    button.classList.remove('listening');
+    updateDictationStatus(statusEl, event.error || 'Dictation failed.', true);
+  };
+
+  recognition.onend = () => {
+    button.classList.remove('listening');
+    activeRecognition = null;
+  };
+
+  recognition.start();
 }
 
 async function initGoogleTokenClient() {
@@ -1057,6 +1172,14 @@ importIncomeBtn.addEventListener('click', async () => {
   } catch (error) {
     updateImportStatus(error.message, true);
   }
+});
+
+incomeDictate.addEventListener('click', () => {
+  startDictation({ target: 'income', button: incomeDictate, statusEl: incomeDictationStatus });
+});
+
+expenseDictate.addEventListener('click', () => {
+  startDictation({ target: 'expense', button: expenseDictate, statusEl: expenseDictationStatus });
 });
 
 window.addEventListener('online', () => {
