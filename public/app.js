@@ -444,8 +444,120 @@ function normalizeWords(text) {
     .trim();
 }
 
+function wordNumberToValue(words) {
+  const units = {
+    zero: 0,
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10,
+    eleven: 11,
+    twelve: 12,
+    thirteen: 13,
+    fourteen: 14,
+    fifteen: 15,
+    sixteen: 16,
+    seventeen: 17,
+    eighteen: 18,
+    nineteen: 19,
+  };
+  const tens = {
+    twenty: 20,
+    thirty: 30,
+    forty: 40,
+    fifty: 50,
+    sixty: 60,
+    seventy: 70,
+    eighty: 80,
+    ninety: 90,
+  };
+
+  let total = 0;
+  let current = 0;
+  let seen = false;
+
+  for (const word of words) {
+    if (units[word] !== undefined) {
+      current += units[word];
+      seen = true;
+      continue;
+    }
+    if (tens[word] !== undefined) {
+      current += tens[word];
+      seen = true;
+      continue;
+    }
+    if (word === 'hundred') {
+      if (current === 0) current = 1;
+      current *= 100;
+      seen = true;
+      continue;
+    }
+    if (word === 'thousand') {
+      if (current === 0) current = 1;
+      total += current * 1000;
+      current = 0;
+      seen = true;
+      continue;
+    }
+  }
+
+  if (!seen) return null;
+  return total + current;
+}
+
+function parseNumberWords(text) {
+  const normalized = normalizeWords(text).replace(/-/g, ' ');
+  const tokens = normalized.split(/\s+/);
+  const numberWords = new Set([
+    'zero','one','two','three','four','five','six','seven','eight','nine','ten',
+    'eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen',
+    'twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety','hundred','thousand','and'
+  ]);
+
+  const sequences = [];
+  let current = [];
+  for (const token of tokens) {
+    if (numberWords.has(token)) {
+      if (token !== 'and') current.push(token);
+    } else if (current.length) {
+      sequences.push(current);
+      current = [];
+    }
+  }
+  if (current.length) sequences.push(current);
+
+  if (!sequences.length) return null;
+  const value = wordNumberToValue(sequences[0]);
+  return value;
+}
+
+function parseRelativeMonth(text) {
+  const normalized = normalizeWords(text);
+  const now = new Date();
+  const current = now.getMonth() + 1;
+  if (normalized.includes('last month') || normalized.includes('previous month')) {
+    return current === 1 ? 12 : current - 1;
+  }
+  if (normalized.includes('next month')) {
+    return current === 12 ? 1 : current + 1;
+  }
+  if (normalized.includes('this month') || normalized.includes('current month')) {
+    return current;
+  }
+  return null;
+}
+
 function parseMonthFromText(text) {
   const normalized = normalizeWords(text);
+  const relative = parseRelativeMonth(normalized);
+  if (relative) return relative;
   const monthIndex = MONTHS.findIndex((month) => normalized.includes(month.toLowerCase()));
   if (monthIndex >= 0) return monthIndex + 1;
   return null;
@@ -453,8 +565,10 @@ function parseMonthFromText(text) {
 
 function parseAmountFromText(text) {
   const match = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/);
-  if (!match) return null;
-  return Number(match[0].replace(/,/g, ''));
+  if (match) return Number(match[0].replace(/,/g, ''));
+
+  const wordNumber = parseNumberWords(text);
+  return Number.isFinite(wordNumber) ? wordNumber : null;
 }
 
 function mapCategoryFromText(text) {
@@ -486,6 +600,7 @@ function parseExpenseDictation(text) {
 
   const filteredWords = words.filter((word) => {
     if (amount !== null && word === String(amount)) return false;
+    if (['last', 'previous', 'next', 'this', 'month', 'current'].includes(word)) return false;
     if (category && category.toLowerCase() === word) return false;
     if (MONTHS.some((monthName) => monthName.toLowerCase() === word)) return false;
     if (['completed', 'paid', 'done', 'for', 'in', 'on', 'at'].includes(word)) return false;
