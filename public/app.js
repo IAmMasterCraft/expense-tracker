@@ -444,19 +444,51 @@ function normalizeWords(text) {
     .trim();
 }
 
+function parseMonthFromText(text) {
+  const normalized = normalizeWords(text);
+  const monthIndex = MONTHS.findIndex((month) => normalized.includes(month.toLowerCase()));
+  if (monthIndex >= 0) return monthIndex + 1;
+  return null;
+}
+
+function parseAmountFromText(text) {
+  const match = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  return Number(match[0].replace(/,/g, ''));
+}
+
+function mapCategoryFromText(text) {
+  const normalized = normalizeWords(text);
+  const direct = CATEGORIES.find((cat) => normalized.includes(cat.toLowerCase()));
+  if (direct) return direct;
+
+  const synonyms = [
+    { keys: ['grocery', 'groceries', 'food', 'dining', 'restaurant', 'coffee'], category: 'Food' },
+    { keys: ['saving', 'savings'], category: 'Savings' },
+    { keys: ['gift', 'donation'], category: 'Gift' },
+    { keys: ['utility', 'utilities', 'bill', 'bills', 'electric', 'water', 'gas', 'internet'], category: 'Utility' },
+    { keys: ['entertainment', 'movie', 'music', 'game'], category: 'Entertainment' },
+    { keys: ['service', 'services', 'rent', 'subscription', 'cleaning'], category: 'Services' },
+    { keys: ['misc', 'miscellaneous', 'other'], category: 'Miscellaneous' },
+  ];
+
+  const match = synonyms.find((entry) => entry.keys.some((key) => normalized.includes(key)));
+  return match ? match.category : null;
+}
+
 function parseExpenseDictation(text) {
   const normalized = normalizeWords(text);
   const words = normalized.split(/\s+/);
-  const amountMatch = normalized.match(/\\d+(?:\\.\\d+)?/);
-  const amount = amountMatch ? Number(amountMatch[0]) : null;
-
-  const category = CATEGORIES.find((cat) => normalized.includes(cat.toLowerCase()));
+  const amount = parseAmountFromText(normalized);
+  const month = parseMonthFromText(normalized);
+  const category = mapCategoryFromText(normalized);
   const completed = normalized.includes('completed') || normalized.includes('paid') || normalized.includes('done');
 
   const filteredWords = words.filter((word) => {
-    if (amountMatch && word === amountMatch[0]) return false;
+    if (amount !== null && word === String(amount)) return false;
     if (category && category.toLowerCase() === word) return false;
-    if (['completed', 'paid', 'done'].includes(word)) return false;
+    if (MONTHS.some((monthName) => monthName.toLowerCase() === word)) return false;
+    if (['completed', 'paid', 'done', 'for', 'in', 'on', 'at'].includes(word)) return false;
     return true;
   });
 
@@ -467,13 +499,14 @@ function parseExpenseDictation(text) {
     amount,
     category: category || expenseCategory.value,
     completed,
+    month,
   };
 }
 
 function parseIncomeDictation(text) {
-  const amountMatch = text.match(/\\d+(?:\\.\\d+)?/);
-  const amount = amountMatch ? Number(amountMatch[0]) : null;
-  return amount;
+  const amount = parseAmountFromText(text);
+  const month = parseMonthFromText(text);
+  return { amount, month };
 }
 
 function stopActiveRecognition() {
@@ -496,22 +529,32 @@ function startDictation({ target, button, statusEl }) {
   button.classList.add('listening');
   updateDictationStatus(statusEl, 'Listening...');
 
-  recognition.onresult = (event) => {
+  recognition.onresult = async (event) => {
     const transcript = event.results?.[0]?.[0]?.transcript || '';
     button.classList.remove('listening');
     updateDictationStatus(statusEl, `Heard: "${transcript}"`);
 
     if (target === 'income') {
-      const amount = parseIncomeDictation(transcript);
+      const { amount, month } = parseIncomeDictation(transcript);
       if (amount === null || Number.isNaN(amount)) {
         updateDictationStatus(statusEl, 'Could not find an income amount in the dictation.', true);
         return;
+      }
+      if (month) {
+        currentMonth = month;
+        monthSelect.value = String(month);
+        await refreshAll();
       }
       incomeAmount.value = amount.toFixed(2);
       return;
     }
 
     const parsed = parseExpenseDictation(transcript);
+    if (parsed.month) {
+      currentMonth = parsed.month;
+      monthSelect.value = String(parsed.month);
+      await refreshAll();
+    }
     expenseName.value = parsed.name;
     if (parsed.amount !== null && !Number.isNaN(parsed.amount)) {
       expenseAmount.value = String(parsed.amount);
