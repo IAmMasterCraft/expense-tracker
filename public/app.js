@@ -64,6 +64,10 @@ const incomeDictate = document.getElementById('incomeDictate');
 const expenseDictate = document.getElementById('expenseDictate');
 const incomeDictationStatus = document.getElementById('incomeDictationStatus');
 const expenseDictationStatus = document.getElementById('expenseDictationStatus');
+const incomeGuided = document.getElementById('incomeGuided');
+const expenseGuided = document.getElementById('expenseGuided');
+const incomeSuggestions = document.getElementById('incomeSuggestions');
+const expenseSuggestions = document.getElementById('expenseSuggestions');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
@@ -72,6 +76,7 @@ let tokenClient;
 let googleAccessToken = null;
 let autoBackupTimer;
 let activeRecognition = null;
+let guidedSession = null;
 
 function formatCurrency(value) {
   const number = Number(value || 0);
@@ -427,13 +432,28 @@ function updateDictationStatus(el, message, isError = false) {
   setStatus(el, message, isError);
 }
 
+function clearSuggestions(container) {
+  container.innerHTML = '';
+}
+
+function renderSuggestions(container, suggestions, onSelect) {
+  clearSuggestions(container);
+  suggestions.forEach((suggestion) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = suggestion;
+    btn.addEventListener('click', () => onSelect(suggestion));
+    container.appendChild(btn);
+  });
+}
+
 function getSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) return null;
   const recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
   recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+  recognition.maxAlternatives = 3;
   return recognition;
 }
 
@@ -624,11 +644,31 @@ function parseIncomeDictation(text) {
   return { amount, month };
 }
 
+function parseYesNo(text) {
+  const normalized = normalizeWords(text);
+  if (['yes', 'yeah', 'yep', 'true', 'correct', 'sure', 'done', 'paid'].some((word) => normalized.includes(word))) {
+    return true;
+  }
+  if (['no', 'nope', 'false', 'not', 'unfinished', 'open'].some((word) => normalized.includes(word))) {
+    return false;
+  }
+  return null;
+}
+
 function stopActiveRecognition() {
   if (activeRecognition) {
     activeRecognition.stop();
     activeRecognition = null;
   }
+}
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  window.speechSynthesis.speak(utterance);
 }
 
 function startDictation({ target, button, statusEl }) {
@@ -650,6 +690,7 @@ function startDictation({ target, button, statusEl }) {
     updateDictationStatus(statusEl, `Heard: "${transcript}"`);
 
     if (target === 'income') {
+      console.log('Parsing income dictation:', transcript);
       const { amount, month } = parseIncomeDictation(transcript);
       if (amount === null || Number.isNaN(amount)) {
         updateDictationStatus(statusEl, 'Could not find an income amount in the dictation.', true);
@@ -689,6 +730,190 @@ function startDictation({ target, button, statusEl }) {
   };
 
   recognition.start();
+}
+
+function stopGuidedSession() {
+  guidedSession = null;
+}
+
+function nextGuidedStep() {
+  if (!guidedSession) return;
+  const step = guidedSession.steps[guidedSession.stepIndex];
+  if (!step) {
+    stopGuidedSession();
+    return;
+  }
+
+  const { prompt, statusEl, suggestionsEl } = guidedSession;
+  const question = step.prompt();
+  updateDictationStatus(statusEl, question);
+  clearSuggestions(suggestionsEl);
+  speak(question);
+
+  const recognition = getSpeechRecognition();
+  if (!recognition) {
+    updateDictationStatus(statusEl, 'Speech recognition not supported in this browser.', true);
+    stopGuidedSession();
+    return;
+  }
+
+  stopActiveRecognition();
+  activeRecognition = recognition;
+
+  recognition.onresult = async (event) => {
+    const alternatives = Array.from(event.results?.[0] || []).map((alt) => alt.transcript).filter(Boolean);
+    const transcript = alternatives[0] || '';
+    const parsed = step.parse(transcript, alternatives);
+    if (parsed.ok) {
+      step.apply(parsed.value);
+      guidedSession.stepIndex += 1;
+      if (step.afterApply) await step.afterApply();
+      nextGuidedStep();
+      return;
+    }
+
+    guidedSession.attempts += 1;
+    updateDictationStatus(statusEl, parsed.message || 'I did not catch that. Please try again.', true);
+    if (parsed.suggestions?.length) {
+      renderSuggestions(suggestionsEl, parsed.suggestions, (choice) => {
+        step.apply(choice);
+        guidedSession.stepIndex += 1;
+        if (step.afterApply) step.afterApply();
+        nextGuidedStep();
+      });
+    }
+
+    if (guidedSession.attempts < guidedSession.maxAttempts) {
+      nextGuidedStep();
+    } else {
+      updateDictationStatus(statusEl, 'Let’s try again later or use manual entry.', true);
+      stopGuidedSession();
+    }
+  };
+
+  recognition.onerror = (event) => {
+    updateDictationStatus(statusEl, event.error || 'Dictation failed.', true);
+    stopGuidedSession();
+  };
+
+  recognition.onend = () => {
+    activeRecognition = null;
+  };
+
+  recognition.start();
+}
+
+function startGuidedIncome() {
+  guidedSession = {
+    stepIndex: 0,
+    attempts: 0,
+    maxAttempts: 2,
+    statusEl: incomeDictationStatus,
+    suggestionsEl: incomeSuggestions,
+    steps: [
+      {
+        prompt: () => 'What is the income amount you want to add?',
+        parse: (transcript, alternatives) => {
+          const { amount, month } = parseIncomeDictation(transcript);
+          if (amount === null || Number.isNaN(amount)) {
+            return {
+              ok: false,
+              message: 'Please say a number like “two thousand” or “2500”.',
+              suggestions: alternatives.map((alt) => alt.trim()).slice(0, 3),
+            };
+          }
+          return { ok: true, value: { amount, month } };
+        },
+        apply: async (value) => {
+          if (value.month) {
+            currentMonth = value.month;
+            monthSelect.value = String(value.month);
+            await refreshAll();
+          }
+          incomeAmount.value = value.amount.toFixed(2);
+        },
+      },
+    ],
+  };
+  nextGuidedStep();
+}
+
+function startGuidedExpense() {
+  guidedSession = {
+    stepIndex: 0,
+    attempts: 0,
+    maxAttempts: 2,
+    statusEl: expenseDictationStatus,
+    suggestionsEl: expenseSuggestions,
+    steps: [
+      {
+        prompt: () => 'What is the expense name?',
+        parse: (transcript) => {
+          const name = transcript.trim();
+          if (!name) return { ok: false, message: 'Please say the expense name.' };
+          return { ok: true, value: name };
+        },
+        apply: (value) => {
+          expenseName.value = value;
+        },
+      },
+      {
+        prompt: () => 'What is the amount?',
+        parse: (transcript, alternatives) => {
+          const amount = parseAmountFromText(transcript);
+          if (amount === null || Number.isNaN(amount)) {
+            return {
+              ok: false,
+              message: 'Please say a number like “twelve fifty” or “12.50”.',
+              suggestions: alternatives.map((alt) => alt.trim()).slice(0, 3),
+            };
+          }
+          return { ok: true, value: amount };
+        },
+        apply: (value) => {
+          expenseAmount.value = String(value);
+        },
+      },
+      {
+        prompt: () => 'Which category? You can say Food, Savings, Gift, Utility, Entertainment, Services, or Miscellaneous.',
+        parse: (transcript, alternatives) => {
+          const category = mapCategoryFromText(transcript);
+          if (!category) {
+            const suggestionList = alternatives
+              .map((alt) => mapCategoryFromText(alt))
+              .filter(Boolean);
+            return {
+              ok: false,
+              message: 'Please say a category name.',
+              suggestions: Array.from(new Set(suggestionList)).slice(0, 3),
+            };
+          }
+          return { ok: true, value: category };
+        },
+        apply: (value) => {
+          expenseCategory.value = value;
+        },
+      },
+      {
+        prompt: () => 'Is this expense completed?',
+        parse: (transcript, alternatives) => {
+          const value = parseYesNo(transcript);
+          if (value === null) {
+            return {
+              ok: false,
+              message: 'Please say yes or no.',
+              suggestions: ['Yes', 'No'],
+            };
+          }
+          return { ok: true, value };
+        },
+        apply: (value) => {
+          expenseCompleted.checked = Boolean(value);
+        },
+      },
+    ],
+  };
+  nextGuidedStep();
 }
 
 async function initGoogleTokenClient() {
@@ -1338,6 +1563,14 @@ incomeDictate.addEventListener('click', () => {
 
 expenseDictate.addEventListener('click', () => {
   startDictation({ target: 'expense', button: expenseDictate, statusEl: expenseDictationStatus });
+});
+
+incomeGuided.addEventListener('click', () => {
+  startGuidedIncome();
+});
+
+expenseGuided.addEventListener('click', () => {
+  startGuidedExpense();
 });
 
 window.addEventListener('online', () => {
