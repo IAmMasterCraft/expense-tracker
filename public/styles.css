@@ -1,13 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@300;500;700&family=Spline+Sans:wght@300;400;500;600&display=swap");
+
 :root {
   color-scheme: light;
-  --bg: #f5f0ea;
-  --card: #ffffff;
-  --ink: #1f1f1f;
-  --muted: #6d6d6d;
-  --accent: #0f766e;
-  --border: #e6e1d9;
-  --shadow: 0 12px 30px rgba(22, 24, 35, 0.08);
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --bg: #f6f1e8;
+  --card: #fffdf9;
+  --ink: #1f1b17;
+  --muted: #6f655d;
+  --accent: #b6572f;
+  --accent-dark: #7c3b1d;
+  --border: #e2d8cd;
+  --shadow: 0 20px 45px rgba(26, 20, 15, 0.12);
+  --shadow-soft: 0 12px 30px rgba(36, 28, 21, 0.08);
+  font-family: "Spline Sans", "Segoe UI", sans-serif;
 }
 
 * {
@@ -16,51 +20,116 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 55%);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255, 244, 226, 0.7), transparent 55%),
+    radial-gradient(circle at 90% 20%, rgba(237, 214, 190, 0.55), transparent 50%),
+    linear-gradient(135deg, #f9f4ec 0%, #f4efe7 40%, #efe3d6 100%);
   color: var(--ink);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::before {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.35), transparent 55%),
+    radial-gradient(circle at 80% 70%, rgba(187, 110, 71, 0.08), transparent 60%);
+}
+
+body::after {
+  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  mix-blend-mode: multiply;
 }
 
 .page {
-  max-width: 1100px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 36px 22px 72px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
 }
 
 .header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  gap: 32px;
   flex-wrap: wrap;
+  border-bottom: 1px solid rgba(180, 160, 140, 0.4);
+  padding-bottom: 18px;
+}
+
+.header-text {
+  max-width: 620px;
 }
 
 .eyebrow {
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 12px;
+  letter-spacing: 0.24em;
+  font-size: 11px;
   color: var(--muted);
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 h1 {
   margin: 0;
-  font-size: 32px;
+  font-size: clamp(32px, 4vw, 46px);
   font-weight: 600;
+  font-family: "Fraunces", serif;
+  letter-spacing: -0.02em;
+}
+
+.subhead {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 520px;
 }
 
 h2 {
   margin: 0 0 12px;
-  font-size: 20px;
+  font-size: 19px;
+  font-family: "Fraunces", serif;
+  font-weight: 500;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 20px;
+  padding: 22px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+  animation: rise 0.6s ease both;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.4), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.card:hover::after {
+  opacity: 0.6;
+}
+
+.card--highlight {
+  border-color: rgba(182, 87, 47, 0.3);
   box-shadow: var(--shadow);
 }
 
@@ -73,9 +142,14 @@ h2 {
 }
 
 .month-select {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(182, 87, 47, 0.2);
+  padding: 8px 12px;
+  border-radius: 999px;
+  box-shadow: 0 10px 18px rgba(20, 12, 8, 0.08);
 }
 
 select,
@@ -88,33 +162,45 @@ a {
 select,
 input {
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 10px;
-  background: #fff;
+  border-radius: 12px;
+  padding: 9px 12px;
+  background: #fffaf4;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+select:focus,
+input:focus {
+  outline: none;
+  border-color: rgba(182, 87, 47, 0.7);
+  box-shadow: 0 0 0 3px rgba(182, 87, 47, 0.15);
 }
 
 button {
   border: none;
-  border-radius: 10px;
-  padding: 8px 16px;
-  background: var(--accent);
+  border-radius: 12px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: #fff;
   cursor: pointer;
+  box-shadow: 0 12px 20px rgba(182, 87, 47, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 button:hover {
-  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 16px 24px rgba(182, 87, 47, 0.3);
 }
 
 .action-link {
   display: inline-flex;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--accent);
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(182, 87, 47, 0.25);
+  background: #fffaf4;
+  color: var(--accent-dark);
   text-decoration: none;
+  box-shadow: 0 8px 16px rgba(20, 12, 8, 0.08);
 }
 
 .action-link:hover {
@@ -136,10 +222,13 @@ button:hover {
   display: flex;
   justify-content: space-between;
   font-size: 15px;
+  border-bottom: 1px dashed rgba(180, 160, 140, 0.35);
+  padding-bottom: 6px;
 }
 
 .summary strong {
   font-size: 18px;
+  font-family: "Fraunces", serif;
 }
 
 .inline-form {
@@ -194,7 +283,7 @@ button:hover {
 th,
 td {
   text-align: left;
-  padding: 10px 6px;
+  padding: 12px 8px;
   border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
@@ -202,6 +291,9 @@ td {
 th {
   color: var(--muted);
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
 }
 
 .hint {
@@ -212,9 +304,10 @@ th {
 
 .action-button {
   background: transparent;
-  color: var(--accent);
+  color: var(--accent-dark);
   border: 1px solid transparent;
   padding: 6px 10px;
+  box-shadow: none;
 }
 
 .action-button:hover {
@@ -243,5 +336,16 @@ th {
   .backup-actions button,
   .action-link {
     width: 100%;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
