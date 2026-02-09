@@ -80,7 +80,8 @@ h2 {
 
 select,
 input,
-button {
+button,
+a {
   font: inherit;
 }
 
@@ -103,6 +104,21 @@ button {
 
 button:hover {
   opacity: 0.9;
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.action-link:hover {
+  border-color: var(--accent);
 }
 
 .grid {
@@ -224,7 +240,8 @@ th {
   .expense-form select,
   .expense-form button,
   .backup-form input,
-  .backup-actions button {
+  .backup-actions button,
+  .action-link {
     width: 100%;
   }
 }

@@ -24,7 +24,7 @@ const CATEGORIES = [
 ];
 
 const DB_NAME = 'expense-tracker-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const monthSelect = document.getElementById('monthSelect');
 const incomeForm = document.getElementById('incomeForm');
@@ -50,13 +50,23 @@ const spreadsheetId = document.getElementById('spreadsheetId');
 const expensesSheet = document.getElementById('expensesSheet');
 const incomeSheet = document.getElementById('incomeSheet');
 const connectGoogle = document.getElementById('connectGoogle');
+const restoreGoogle = document.getElementById('restoreGoogle');
+const autoBackup = document.getElementById('autoBackup');
 const backupStatus = document.getElementById('backupStatus');
+const exportExpenses = document.getElementById('exportExpenses');
+const exportIncome = document.getElementById('exportIncome');
+const importExpenses = document.getElementById('importExpenses');
+const importIncome = document.getElementById('importIncome');
+const importExpensesBtn = document.getElementById('importExpensesBtn');
+const importIncomeBtn = document.getElementById('importIncomeBtn');
+const importStatus = document.getElementById('importStatus');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
 let dbPromise;
 let tokenClient;
 let googleAccessToken = null;
+let autoBackupTimer;
 
 function formatCurrency(value) {
   const number = Number(value || 0);
@@ -102,7 +112,7 @@ function openDb() {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = () => {
+    request.onupgradeneeded = (event) => {
       const db = request.result;
       if (!db.objectStoreNames.contains('expenses')) {
         const store = db.createObjectStore('expenses', { keyPath: 'id', autoIncrement: true });
@@ -113,6 +123,35 @@ function openDb() {
       }
       if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains('syncQueue')) {
+        db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true });
+      }
+
+      if (event.oldVersion < 2) {
+        const expenseStore = request.transaction.objectStore('expenses');
+        expenseStore.openCursor().onsuccess = (cursorEvent) => {
+          const cursor = cursorEvent.target.result;
+          if (!cursor) return;
+          const value = cursor.value;
+          if (!value.updated_at) {
+            value.updated_at = value.created_at || new Date().toISOString();
+            cursor.update(value);
+          }
+          cursor.continue();
+        };
+
+        const incomeStore = request.transaction.objectStore('incomes');
+        incomeStore.openCursor().onsuccess = (cursorEvent) => {
+          const cursor = cursorEvent.target.result;
+          if (!cursor) return;
+          const value = cursor.value;
+          if (!value.updated_at) {
+            value.updated_at = new Date().toISOString();
+            cursor.update(value);
+          }
+          cursor.continue();
+        };
       }
     };
   });
@@ -136,7 +175,9 @@ async function getIncome(month) {
 }
 
 async function setIncome(month, amount) {
-  await withStore('incomes', 'readwrite', (store) => store.put({ month, amount }));
+  const updated_at = new Date().toISOString();
+  await withStore('incomes', 'readwrite', (store) => store.put({ month, amount, updated_at }));
+  await queueAutoBackup('income');
 }
 
 async function listExpensesByMonth(month) {
@@ -146,17 +187,24 @@ async function listExpensesByMonth(month) {
     const store = tx.objectStore('expenses');
     const index = store.index('month');
     const request = index.getAll(month);
-    request.onsuccess = () => resolve(request.result || []);
+    request.onsuccess = () => {
+      const items = (request.result || []).filter((row) => !row.deleted_at);
+      resolve(items);
+    };
     request.onerror = () => reject(request.error);
   });
 }
 
 async function addExpenseRecord(payload) {
+  const now = new Date().toISOString();
   const record = {
     ...payload,
-    created_at: new Date().toISOString(),
+    created_at: now,
+    updated_at: now,
+    deleted_at: '',
   };
   await withStore('expenses', 'readwrite', (store) => store.add(record));
+  await queueAutoBackup('expense');
 }
 
 async function updateExpenseRecord(id, changes) {
@@ -172,7 +220,7 @@ async function updateExpenseRecord(id, changes) {
         resolve(null);
         return;
       }
-      const updated = { ...current, ...changes };
+      const updated = { ...current, ...changes, updated_at: new Date().toISOString() };
       const putReq = store.put(updated);
       putReq.onsuccess = () => resolve(updated);
       putReq.onerror = () => reject(putReq.error);
@@ -181,17 +229,33 @@ async function updateExpenseRecord(id, changes) {
 }
 
 async function deleteExpenseRecord(id) {
-  await withStore('expenses', 'readwrite', (store) => store.delete(id));
+  await updateExpenseRecord(id, { deleted_at: new Date().toISOString() });
 }
 
-async function listAllExpenses() {
+async function listAllExpenses(includeDeleted = false) {
   const result = await withStore('expenses', 'readonly', (store) => store.getAll());
-  return result || [];
+  const items = result || [];
+  return includeDeleted ? items : items.filter((row) => !row.deleted_at);
 }
 
 async function listAllIncomes() {
   const result = await withStore('incomes', 'readonly', (store) => store.getAll());
   return result || [];
+}
+
+async function clearSyncQueue() {
+  await withStore('syncQueue', 'readwrite', (store) => store.clear());
+}
+
+async function getSyncQueueCount() {
+  const result = await withStore('syncQueue', 'readonly', (store) => store.getAllKeys());
+  return (result || []).length;
+}
+
+async function addSyncQueueItem(type) {
+  await withStore('syncQueue', 'readwrite', (store) =>
+    store.add({ type, created_at: new Date().toISOString() })
+  );
 }
 
 async function getSetting(key) {
@@ -350,6 +414,10 @@ function updateBackupStatus(message, isError = false) {
   setStatus(backupStatus, message, isError);
 }
 
+function updateImportStatus(message, isError = false) {
+  setStatus(importStatus, message, isError);
+}
+
 async function initGoogleTokenClient() {
   const clientId = googleClientId.value.trim();
   if (!clientId) {
@@ -370,7 +438,8 @@ async function initGoogleTokenClient() {
         return;
       }
       googleAccessToken = response.access_token;
-      updateBackupStatus('Google connected. You can back up now.');
+      updateBackupStatus('Google connected. You can back up or restore now.');
+      maybeFlushQueue();
     },
   });
 
@@ -411,6 +480,27 @@ async function updateSheetValues(spreadsheetIdValue, range, values) {
   }
 }
 
+async function getSheetValues(spreadsheetIdValue, range) {
+  const response = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetIdValue}/values/${encodeURIComponent(
+      range
+    )}`,
+    {
+      headers: {
+        Authorization: `Bearer ${googleAccessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error?.message || 'Sheets read failed.');
+  }
+
+  const data = await response.json();
+  return data.values || [];
+}
+
 async function backupToSheets() {
   clearStatus(backupStatus);
 
@@ -434,10 +524,13 @@ async function backupToSheets() {
     setSetting('incomeSheet', incomeSheetName),
   ]);
 
-  const [expenses, incomes] = await Promise.all([listAllExpenses(), listAllIncomes()]);
+  const [expenses, incomes] = await Promise.all([
+    listAllExpenses(true),
+    listAllIncomes(),
+  ]);
 
   const expenseRows = [
-    ['Month', 'Expense', 'Amount', 'Category', 'Completed', 'Created At'],
+    ['Id', 'Month', 'Expense', 'Amount', 'Category', 'Completed', 'Created At', 'Updated At', 'Deleted At'],
   ];
   expenses
     .sort((a, b) => {
@@ -446,26 +539,394 @@ async function backupToSheets() {
     })
     .forEach((row) => {
       expenseRows.push([
+        row.id,
         MONTHS[row.month - 1] || String(row.month),
         row.name,
         row.amount,
         row.category,
         row.completed ? 'TRUE' : 'FALSE',
         row.created_at,
+        row.updated_at,
+        row.deleted_at || '',
       ]);
     });
 
-  const incomeRows = [['Month', 'Income']];
+  const incomeRows = [['Month', 'Income', 'Updated At']];
   MONTHS.forEach((label, index) => {
     const monthNumber = index + 1;
-    const income = incomes.find((row) => row.month === monthNumber)?.amount ?? 0;
-    incomeRows.push([label, income]);
+    const income = incomes.find((row) => row.month === monthNumber);
+    incomeRows.push([label, income?.amount ?? 0, income?.updated_at ?? '']);
   });
 
   await updateSheetValues(spreadsheetIdValue, `${expensesSheetName}!A1`, expenseRows);
   await updateSheetValues(spreadsheetIdValue, `${incomeSheetName}!A1`, incomeRows);
 
+  await clearSyncQueue();
   updateBackupStatus('Backup completed.');
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let current = '';
+  let inQuotes = false;
+  const row = [];
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(current);
+      current = '';
+    } else if (char === '\n' && !inQuotes) {
+      row.push(current);
+      rows.push([...row]);
+      row.length = 0;
+      current = '';
+    } else if (char !== '\r') {
+      current += char;
+    }
+  }
+
+  if (current.length || row.length) {
+    row.push(current);
+    rows.push([...row]);
+  }
+
+  return rows.filter((r) => r.some((cell) => cell.trim() !== ''));
+}
+
+function toCsv(rows) {
+  return rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const value = cell === null || cell === undefined ? '' : String(cell);
+          if (value.includes('"') || value.includes(',') || value.includes('\n')) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        })
+        .join(',')
+    )
+    .join('\n');
+}
+
+function downloadCsv(filename, rows) {
+  const blob = new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function monthToNumber(value) {
+  const trimmed = value.trim();
+  const monthIndex = MONTHS.findIndex((month) => month.toLowerCase() === trimmed.toLowerCase());
+  if (monthIndex >= 0) return monthIndex + 1;
+  const asNumber = Number(trimmed);
+  if (Number.isInteger(asNumber) && asNumber >= 1 && asNumber <= 12) return asNumber;
+  return null;
+}
+
+function parseBoolean(value) {
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
+async function importExpensesCsv(file) {
+  const text = await file.text();
+  const rows = parseCsv(text);
+  if (!rows.length) throw new Error('CSV is empty.');
+
+  const [header, ...data] = rows;
+  const index = (name) => header.findIndex((cell) => cell.trim().toLowerCase() === name);
+
+  const idIndex = index('id');
+  const monthIndex = index('month');
+  const expenseIndex = index('expense');
+  const amountIndex = index('amount');
+  const categoryIndex = index('category');
+  const completedIndex = index('completed');
+  const createdIndex = index('created at');
+  const updatedIndex = index('updated at');
+  const deletedIndex = index('deleted at');
+
+  if (monthIndex < 0 || expenseIndex < 0 || amountIndex < 0) {
+    throw new Error('CSV must include Month, Expense, and Amount columns.');
+  }
+
+  const db = await openDb();
+  const tx = db.transaction('expenses', 'readwrite');
+  const store = tx.objectStore('expenses');
+
+  await new Promise((resolve, reject) => {
+    data.forEach((row) => {
+      const month = monthToNumber(row[monthIndex] || '');
+      if (!month) return;
+      const name = (row[expenseIndex] || '').trim();
+      if (!name) return;
+      const amount = Number(row[amountIndex] || 0);
+      const category = (row[categoryIndex] || 'Miscellaneous').trim() || 'Miscellaneous';
+      const completed = completedIndex >= 0 ? parseBoolean(row[completedIndex] || '') : false;
+      const created_at = createdIndex >= 0 ? row[createdIndex] || new Date().toISOString() : new Date().toISOString();
+      const updated_at = updatedIndex >= 0 ? row[updatedIndex] || created_at : created_at;
+      const deleted_at = deletedIndex >= 0 ? row[deletedIndex] || '' : '';
+      const idValue = idIndex >= 0 ? Number(row[idIndex]) : null;
+
+      const record = {
+        id: Number.isFinite(idValue) && idValue > 0 ? idValue : undefined,
+        month,
+        name,
+        amount,
+        category,
+        completed,
+        created_at,
+        updated_at,
+        deleted_at,
+      };
+
+      if (record.id) {
+        store.put(record);
+      } else {
+        store.add(record);
+      }
+    });
+
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+
+  await queueAutoBackup('import');
+}
+
+async function importIncomeCsv(file) {
+  const text = await file.text();
+  const rows = parseCsv(text);
+  if (!rows.length) throw new Error('CSV is empty.');
+
+  const [header, ...data] = rows;
+  const index = (name) => header.findIndex((cell) => cell.trim().toLowerCase() === name);
+
+  const monthIndex = index('month');
+  const incomeIndex = index('income');
+  const updatedIndex = index('updated at');
+
+  if (monthIndex < 0 || incomeIndex < 0) {
+    throw new Error('CSV must include Month and Income columns.');
+  }
+
+  const db = await openDb();
+  const tx = db.transaction('incomes', 'readwrite');
+  const store = tx.objectStore('incomes');
+
+  await new Promise((resolve, reject) => {
+    data.forEach((row) => {
+      const month = monthToNumber(row[monthIndex] || '');
+      if (!month) return;
+      const amount = Number(row[incomeIndex] || 0);
+      const updated_at = updatedIndex >= 0 ? row[updatedIndex] || new Date().toISOString() : new Date().toISOString();
+      store.put({ month, amount, updated_at });
+    });
+
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+
+  await queueAutoBackup('import');
+}
+
+async function exportExpensesCsv() {
+  const expenses = await listAllExpenses(true);
+  const rows = [
+    ['Id', 'Month', 'Expense', 'Amount', 'Category', 'Completed', 'Created At', 'Updated At', 'Deleted At'],
+  ];
+  expenses.forEach((row) => {
+    rows.push([
+      row.id,
+      MONTHS[row.month - 1] || String(row.month),
+      row.name,
+      row.amount,
+      row.category,
+      row.completed ? 'TRUE' : 'FALSE',
+      row.created_at,
+      row.updated_at,
+      row.deleted_at || '',
+    ]);
+  });
+  downloadCsv('expenses.csv', rows);
+}
+
+async function exportIncomeCsv() {
+  const incomes = await listAllIncomes();
+  const rows = [['Month', 'Income', 'Updated At']];
+  MONTHS.forEach((label, index) => {
+    const monthNumber = index + 1;
+    const income = incomes.find((row) => row.month === monthNumber);
+    rows.push([label, income?.amount ?? 0, income?.updated_at ?? '']);
+  });
+  downloadCsv('income.csv', rows);
+}
+
+async function restoreFromSheets() {
+  clearStatus(backupStatus);
+
+  if (!googleAccessToken) {
+    updateBackupStatus('Connect Google before restoring.', true);
+    return;
+  }
+
+  const spreadsheetIdValue = spreadsheetId.value.trim();
+  if (!spreadsheetIdValue) {
+    updateBackupStatus('Spreadsheet ID is required.', true);
+    return;
+  }
+
+  const expensesSheetName = sanitizeSheetName(expensesSheet.value, 'Expenses');
+  const incomeSheetName = sanitizeSheetName(incomeSheet.value, 'Income');
+
+  const [expenseRows, incomeRows] = await Promise.all([
+    getSheetValues(spreadsheetIdValue, `${expensesSheetName}`),
+    getSheetValues(spreadsheetIdValue, `${incomeSheetName}`),
+  ]);
+
+  if (!expenseRows.length && !incomeRows.length) {
+    updateBackupStatus('No data found in the provided sheets.', true);
+    return;
+  }
+
+  const [expenseHeader, ...expenseData] = expenseRows;
+  const [incomeHeader, ...incomeData] = incomeRows;
+
+  const expIndex = (name) =>
+    expenseHeader?.findIndex((cell) => cell.trim().toLowerCase() === name) ?? -1;
+  const incIndex = (name) =>
+    incomeHeader?.findIndex((cell) => cell.trim().toLowerCase() === name) ?? -1;
+
+  const idIndex = expIndex('id');
+  const monthIndex = expIndex('month');
+  const expenseIndex = expIndex('expense');
+  const amountIndex = expIndex('amount');
+  const categoryIndex = expIndex('category');
+  const completedIndex = expIndex('completed');
+  const createdIndex = expIndex('created at');
+  const updatedIndex = expIndex('updated at');
+  const deletedIndex = expIndex('deleted at');
+
+  const incomeMonthIndex = incIndex('month');
+  const incomeAmountIndex = incIndex('income');
+  const incomeUpdatedIndex = incIndex('updated at');
+
+  if (monthIndex < 0 || expenseIndex < 0 || amountIndex < 0) {
+    throw new Error('Expenses sheet is missing required columns.');
+  }
+
+  if (incomeMonthIndex < 0 || incomeAmountIndex < 0) {
+    throw new Error('Income sheet is missing required columns.');
+  }
+
+  const localExpenses = await listAllExpenses(true);
+  const expenseMap = new Map(localExpenses.map((row) => [row.id, row]));
+
+  const db = await openDb();
+  const expenseTx = db.transaction('expenses', 'readwrite');
+  const expenseStore = expenseTx.objectStore('expenses');
+
+  await new Promise((resolve, reject) => {
+    expenseData.forEach((row) => {
+      const month = monthToNumber(row[monthIndex] || '');
+      if (!month) return;
+      const name = (row[expenseIndex] || '').trim();
+      if (!name) return;
+      const idValue = idIndex >= 0 ? Number(row[idIndex]) : null;
+      if (!Number.isFinite(idValue) || idValue <= 0) return;
+
+      const record = {
+        id: idValue,
+        month,
+        name,
+        amount: Number(row[amountIndex] || 0),
+        category: (row[categoryIndex] || 'Miscellaneous').trim() || 'Miscellaneous',
+        completed: completedIndex >= 0 ? parseBoolean(row[completedIndex] || '') : false,
+        created_at: createdIndex >= 0 ? row[createdIndex] || new Date().toISOString() : new Date().toISOString(),
+        updated_at: updatedIndex >= 0 ? row[updatedIndex] || new Date().toISOString() : new Date().toISOString(),
+        deleted_at: deletedIndex >= 0 ? row[deletedIndex] || '' : '',
+      };
+
+      const local = expenseMap.get(record.id);
+      if (!local || record.updated_at > (local.updated_at || '')) {
+        expenseStore.put(record);
+      }
+    });
+
+    expenseTx.oncomplete = resolve;
+    expenseTx.onerror = () => reject(expenseTx.error);
+  });
+
+  const incomes = await listAllIncomes();
+  const incomeMap = new Map(incomes.map((row) => [row.month, row]));
+
+  const incomeTx = db.transaction('incomes', 'readwrite');
+  const incomeStore = incomeTx.objectStore('incomes');
+
+  await new Promise((resolve, reject) => {
+    incomeData.forEach((row) => {
+      const month = monthToNumber(row[incomeMonthIndex] || '');
+      if (!month) return;
+      const amount = Number(row[incomeAmountIndex] || 0);
+      const updated_at = incomeUpdatedIndex >= 0 ? row[incomeUpdatedIndex] || new Date().toISOString() : new Date().toISOString();
+
+      const local = incomeMap.get(month);
+      if (!local || updated_at > (local.updated_at || '')) {
+        incomeStore.put({ month, amount, updated_at });
+      }
+    });
+
+    incomeTx.oncomplete = resolve;
+    incomeTx.onerror = () => reject(incomeTx.error);
+  });
+
+  await refreshAll();
+  updateBackupStatus('Restore completed using last-write-wins.');
+}
+
+async function queueAutoBackup(type) {
+  const enabled = await getSetting('autoBackup');
+  if (!enabled) return;
+  await addSyncQueueItem(type);
+  scheduleAutoBackup();
+}
+
+function scheduleAutoBackup() {
+  if (autoBackupTimer) clearTimeout(autoBackupTimer);
+  autoBackupTimer = setTimeout(() => {
+    maybeFlushQueue();
+  }, 1500);
+}
+
+async function maybeFlushQueue() {
+  const enabled = await getSetting('autoBackup');
+  if (!enabled) return;
+  const queueCount = await getSyncQueueCount();
+  if (!queueCount) return;
+  if (!googleAccessToken || !navigator.onLine) {
+    updateBackupStatus('Auto-backup queued (offline or not connected).');
+    return;
+  }
+  try {
+    await backupToSheets();
+  } catch (error) {
+    updateBackupStatus(error.message, true);
+  }
 }
 
 async function loadSettings() {
@@ -473,6 +934,7 @@ async function loadSettings() {
   spreadsheetId.value = await getSetting('spreadsheetId');
   expensesSheet.value = (await getSetting('expensesSheet')) || 'Expenses';
   incomeSheet.value = (await getSetting('incomeSheet')) || 'Income';
+  autoBackup.checked = Boolean(await getSetting('autoBackup'));
 }
 
 buildSelectOptions(monthSelect, MONTHS);
@@ -538,6 +1000,15 @@ connectGoogle.addEventListener('click', async () => {
   await connectToGoogle();
 });
 
+restoreGoogle.addEventListener('click', async () => {
+  if (!confirm('Restore will merge by last update time. Continue?')) return;
+  try {
+    await restoreFromSheets();
+  } catch (error) {
+    updateBackupStatus(error.message, true);
+  }
+});
+
 backupForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   try {
@@ -545,6 +1016,51 @@ backupForm.addEventListener('submit', async (event) => {
   } catch (error) {
     updateBackupStatus(error.message, true);
   }
+});
+
+autoBackup.addEventListener('change', async (event) => {
+  await setSetting('autoBackup', event.target.checked);
+  if (event.target.checked) {
+    scheduleAutoBackup();
+  }
+});
+
+exportExpenses.addEventListener('click', async () => {
+  await exportExpensesCsv();
+});
+
+exportIncome.addEventListener('click', async () => {
+  await exportIncomeCsv();
+});
+
+importExpensesBtn.addEventListener('click', async () => {
+  clearStatus(importStatus);
+  const file = importExpenses.files?.[0];
+  if (!file) return updateImportStatus('Select an expenses CSV file first.', true);
+  try {
+    await importExpensesCsv(file);
+    updateImportStatus('Expenses imported.');
+    await refreshAll();
+  } catch (error) {
+    updateImportStatus(error.message, true);
+  }
+});
+
+importIncomeBtn.addEventListener('click', async () => {
+  clearStatus(importStatus);
+  const file = importIncome.files?.[0];
+  if (!file) return updateImportStatus('Select an income CSV file first.', true);
+  try {
+    await importIncomeCsv(file);
+    updateImportStatus('Income imported.');
+    await refreshAll();
+  } catch (error) {
+    updateImportStatus(error.message, true);
+  }
+});
+
+window.addEventListener('online', () => {
+  maybeFlushQueue();
 });
 
 loadSettings()

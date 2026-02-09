@@ -135,10 +135,30 @@
       </section>
 
       <section class="card">
+        <h2>Import / Export</h2>
+        <p class="hint">
+          Export CSV for backups or import CSV files that follow the template.
+        </p>
+        <div class="backup-actions">
+          <button type="button" id="exportExpenses">Export Expenses CSV</button>
+          <button type="button" id="exportIncome">Export Income CSV</button>
+          <a class="action-link" href="/templates/expenses-template.csv" download>Download Expenses Template</a>
+          <a class="action-link" href="/templates/income-template.csv" download>Download Income Template</a>
+        </div>
+        <form id="importForm" class="backup-form">
+          <input id="importExpenses" type="file" accept=".csv" />
+          <button type="button" id="importExpensesBtn">Import Expenses CSV</button>
+          <input id="importIncome" type="file" accept=".csv" />
+          <button type="button" id="importIncomeBtn">Import Income CSV</button>
+        </form>
+        <p class="hint" id="importStatus"></p>
+      </section>
+
+      <section class="card">
         <h2>Google Sheets Backup</h2>
         <p class="hint">
           Data stays on this device in IndexedDB. Use this section to back up
-          to a Google Sheet you own.
+          or restore from a Google Sheet you own.
         </p>
         <form id="backupForm" class="backup-form">
           <input
@@ -165,8 +185,13 @@
             placeholder="Income sheet name (default: Income)"
             autocomplete="off"
           />
+          <label class="checkbox">
+            <input id="autoBackup" type="checkbox" />
+            Auto-backup on changes
+          </label>
           <div class="backup-actions">
             <button type="button" id="connectGoogle">Connect Google</button>
+            <button type="button" id="restoreGoogle">Restore</button>
             <button type="submit">Backup Now</button>
           </div>
         </form>
