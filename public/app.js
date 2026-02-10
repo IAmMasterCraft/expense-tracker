@@ -37,12 +37,14 @@ const expenseCategory = document.getElementById('expenseCategory');
 const expenseCompleted = document.getElementById('expenseCompleted');
 const expenseStatus = document.getElementById('expenseStatus');
 const expenseTable = document.getElementById('expenseTable');
+const expenseList = document.getElementById('expenseList');
 const monthTotal = document.getElementById('monthTotal');
 const monthBalance = document.getElementById('monthBalance');
 const yearIncome = document.getElementById('yearIncome');
 const yearExpense = document.getElementById('yearExpense');
 const yearBalance = document.getElementById('yearBalance');
 const analysisTable = document.getElementById('analysisTable');
+const analysisList = document.getElementById('analysisList');
 const analysisNote = document.getElementById('analysisNote');
 const backupForm = document.getElementById('backupForm');
 const googleClientId = document.getElementById('googleClientId');
@@ -299,39 +301,52 @@ async function loadExpenses() {
 }
 
 function renderExpenses() {
-  expenseTable.innerHTML = '';
+  if (expenseTable) expenseTable.innerHTML = '';
+  if (expenseList) expenseList.innerHTML = '';
   currentExpenses.forEach((expense) => {
-    const row = document.createElement('tr');
+    if (!expenseList) return;
+    const card = document.createElement('div');
+    card.className = 'expense-item';
 
-    const name = document.createElement('td');
+    const header = document.createElement('div');
+    header.className = 'expense-item-header';
+    const name = document.createElement('span');
     name.textContent = expense.name;
-
-    const amount = document.createElement('td');
+    const amount = document.createElement('span');
     amount.textContent = formatCurrency(expense.amount);
+    header.appendChild(name);
+    header.appendChild(amount);
 
-    const category = document.createElement('td');
+    const meta = document.createElement('div');
+    meta.className = 'expense-item-meta';
+    const category = document.createElement('span');
     category.textContent = expense.category;
+    const status = document.createElement('span');
+    status.textContent = expense.completed ? 'Completed' : 'Open';
+    meta.appendChild(category);
+    meta.appendChild(status);
 
-    const completed = document.createElement('td');
+    const actions = document.createElement('div');
+    actions.className = 'expense-item-meta';
+    const checkboxLabel = document.createElement('label');
+    checkboxLabel.className = 'checkbox';
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = Boolean(expense.completed);
     checkbox.addEventListener('change', () => toggleExpense(expense.id, checkbox.checked));
-    completed.appendChild(checkbox);
-
-    const actions = document.createElement('td');
+    checkboxLabel.appendChild(checkbox);
+    checkboxLabel.appendChild(document.createTextNode('Completed'));
     const remove = document.createElement('button');
     remove.className = 'action-button';
     remove.textContent = 'Delete';
     remove.addEventListener('click', () => deleteExpense(expense.id));
+    actions.appendChild(checkboxLabel);
     actions.appendChild(remove);
 
-    row.appendChild(name);
-    row.appendChild(amount);
-    row.appendChild(category);
-    row.appendChild(completed);
-    row.appendChild(actions);
-    expenseTable.appendChild(row);
+    card.appendChild(header);
+    card.appendChild(meta);
+    card.appendChild(actions);
+    expenseList.appendChild(card);
   });
 
   const total = currentExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -385,20 +400,31 @@ async function loadYearSummary() {
     entry.count += 1;
   });
 
-  analysisTable.innerHTML = '';
+  if (analysisTable) analysisTable.innerHTML = '';
+  if (analysisList) analysisList.innerHTML = '';
   CATEGORIES.forEach((category) => {
     const entry = byCategory.get(category);
-    const tr = document.createElement('tr');
-    const cat = document.createElement('td');
+    if (!analysisList) return;
+    const card = document.createElement('div');
+    card.className = 'analysis-item';
+    const header = document.createElement('div');
+    header.className = 'analysis-item-header';
+    const cat = document.createElement('span');
     cat.textContent = category;
-    const amount = document.createElement('td');
+    const amount = document.createElement('span');
     amount.textContent = formatCurrency(entry.amount);
-    const count = document.createElement('td');
-    count.textContent = String(entry.count);
-    tr.appendChild(cat);
-    tr.appendChild(amount);
-    tr.appendChild(count);
-    analysisTable.appendChild(tr);
+    header.appendChild(cat);
+    header.appendChild(amount);
+
+    const meta = document.createElement('div');
+    meta.className = 'analysis-item-meta';
+    const count = document.createElement('span');
+    count.textContent = `${entry.count} items`;
+    meta.appendChild(count);
+
+    card.appendChild(header);
+    card.appendChild(meta);
+    analysisList.appendChild(card);
   });
 
   analysisNote.textContent = `Unaccounted expenses: ${formatCurrency(unaccounted)}`;
@@ -1622,7 +1648,7 @@ function initSplash() {
   if (!splash) return;
   const hideSplash = () => splash.classList.add('hidden');
   enterApp?.addEventListener('click', hideSplash);
-  setTimeout(hideSplash, 2200);
+  setTimeout(hideSplash, 4200);
 }
 
 loadSettings()

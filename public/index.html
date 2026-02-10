@@ -29,222 +29,207 @@
           <select id="monthSelect" aria-label="Select month"></select>
         </div>
 
-        <nav class="tabbar" aria-label="Primary">
-          <button type="button" class="tab active" data-tab="home">Home</button>
-          <button type="button" class="tab" data-tab="expenses">Expenses</button>
-          <button type="button" class="tab" data-tab="analysis">Analysis</button>
-          <button type="button" class="tab" data-tab="backup">Backup</button>
-        </nav>
-
         <main class="page">
-          <section class="grid tab-panel active" data-tab-panel="home">
+          <section class="tab-panel active" data-tab-panel="expenses">
+            <section class="card card--media">
+              <div class="media-panel media-panel--expenses" role="img" aria-label="Notebook and coffee"></div>
+            </section>
+
+            <section class="card hero-card">
+              <p class="eyebrow">Today’s Focus</p>
+              <h2 id="dailyPrompt">Make room for what tastes good.</h2>
+              <p class="hint">Capture your income and expenses in seconds.</p>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <h2>Expenses</h2>
+              </div>
+              <form id="expenseForm" class="expense-form">
+                <input
+                  id="expenseName"
+                  type="text"
+                  placeholder="Expense name"
+                  maxlength="120"
+                  required
+                />
+                <input
+                  id="expenseAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Amount"
+                  required
+                />
+                <select id="expenseCategory" aria-label="Expense category"></select>
+                <label class="checkbox">
+                  <input id="expenseCompleted" type="checkbox" />
+                  Completed
+                </label>
+                <button type="submit">Add</button>
+                <button type="button" class="icon-button" id="expenseDictate" aria-label="Dictate expense">
+                  🎙️
+                </button>
+                <button type="button" class="ghost-button" id="expenseGuided">Guided</button>
+              </form>
+              <p class="hint" id="expenseStatus"></p>
+              <p class="hint" id="expenseDictationStatus"></p>
+              <div class="suggestions" id="expenseSuggestions"></div>
+            </section>
+
+            <section class="card">
+              <h2>Recent Expenses</h2>
+              <div class="expense-list" id="expenseList"></div>
+            </section>
+          </section>
+
+          <section class="tab-panel" data-tab-panel="home">
             <section class="card card--media">
               <div class="media-panel media-panel--home" role="img" aria-label="Warm pastry and coffee"></div>
-              <div class="media-panel-body hero-card">
-                <p class="eyebrow">Today’s Focus</p>
-                <h2 id="dailyPrompt">Make room for what tastes good.</h2>
-                <p class="hint">Capture your income and expenses in seconds.</p>
+            </section>
+
+            <section class="card card--highlight">
+              <h2>Income</h2>
+              <form id="incomeForm" class="inline-form">
+                <input
+                  id="incomeAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  aria-label="Income amount"
+                />
+                <button type="submit">Save</button>
+                <button type="button" class="icon-button" id="incomeDictate" aria-label="Dictate income">
+                  🎙️
+                </button>
+                <button type="button" class="ghost-button" id="incomeGuided">Guided</button>
+              </form>
+              <p class="hint" id="incomeStatus"></p>
+              <p class="hint" id="incomeDictationStatus"></p>
+              <div class="suggestions" id="incomeSuggestions"></div>
+            </section>
+
+            <section class="card">
+              <h2>Month Summary</h2>
+              <div class="summary">
+                <div>
+                  <span>Total Expenses</span>
+                  <strong id="monthTotal">$0.00</strong>
+                </div>
+                <div>
+                  <span>Balance</span>
+                  <strong id="monthBalance">$0.00</strong>
+                </div>
               </div>
             </section>
 
-            <div class="card card--highlight">
-          <h2>Income</h2>
-          <form id="incomeForm" class="inline-form">
-            <input
-              id="incomeAmount"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              aria-label="Income amount"
-            />
-            <button type="submit">Save</button>
-            <button type="button" class="icon-button" id="incomeDictate" aria-label="Dictate income">
-              🎙️
-            </button>
-            <button type="button" class="ghost-button" id="incomeGuided">Guided</button>
-          </form>
-          <p class="hint" id="incomeStatus"></p>
-          <p class="hint" id="incomeDictationStatus"></p>
-          <div class="suggestions" id="incomeSuggestions"></div>
-            </div>
-
-            <div class="card">
-          <h2>Month Summary</h2>
-          <div class="summary">
-            <div>
-              <span>Total Expenses</span>
-              <strong id="monthTotal">$0.00</strong>
-            </div>
-            <div>
-              <span>Balance</span>
-              <strong id="monthBalance">$0.00</strong>
-            </div>
-          </div>
-            </div>
-
-            <div class="card">
-          <h2>Year Snapshot</h2>
-          <div class="summary">
-            <div>
-              <span>Yearly Income</span>
-              <strong id="yearIncome">$0.00</strong>
-            </div>
-            <div>
-              <span>Yearly Expenses</span>
-              <strong id="yearExpense">$0.00</strong>
-            </div>
-            <div>
-              <span>Yearly Balance</span>
-              <strong id="yearBalance">$0.00</strong>
-            </div>
-          </div>
-            </div>
+            <section class="card">
+              <h2>Year Snapshot</h2>
+              <div class="summary">
+                <div>
+                  <span>Yearly Income</span>
+                  <strong id="yearIncome">$0.00</strong>
+                </div>
+                <div>
+                  <span>Yearly Expenses</span>
+                  <strong id="yearExpense">$0.00</strong>
+                </div>
+                <div>
+                  <span>Yearly Balance</span>
+                  <strong id="yearBalance">$0.00</strong>
+                </div>
+              </div>
+            </section>
           </section>
 
-          <section class="card card--media tab-panel" data-tab-panel="expenses">
-        <div class="media-panel media-panel--expenses" role="img" aria-label="Notebook and coffee"></div>
-        <div class="media-panel-body">
-        <div class="card-header">
-          <h2>Expenses</h2>
-          <form id="expenseForm" class="expense-form">
-            <input
-              id="expenseName"
-              type="text"
-              placeholder="Expense name"
-              maxlength="120"
-              required
-            />
-            <input
-              id="expenseAmount"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Amount"
-              required
-            />
-            <select id="expenseCategory" aria-label="Expense category"></select>
-            <label class="checkbox">
-              <input id="expenseCompleted" type="checkbox" />
-              Completed
-            </label>
-            <button type="submit">Add</button>
-            <button type="button" class="icon-button" id="expenseDictate" aria-label="Dictate expense">
-              🎙️
-            </button>
-            <button type="button" class="ghost-button" id="expenseGuided">Guided</button>
-          </form>
-        </div>
-        <p class="hint" id="expenseStatus"></p>
-        <p class="hint" id="expenseDictationStatus"></p>
-        <div class="suggestions" id="expenseSuggestions"></div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Expense</th>
-                <th>Amount</th>
-                <th>Category</th>
-                <th>Completed</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="expenseTable"></tbody>
-          </table>
-        </div>
-        </div>
+          <section class="tab-panel" data-tab-panel="analysis">
+            <section class="card card--media">
+              <div class="media-panel media-panel--analysis" role="img" aria-label="Minimal notebook flat lay"></div>
+            </section>
+            <section class="card">
+              <h2>Year Analysis</h2>
+              <div class="analysis-list" id="analysisList"></div>
+              <p class="hint" id="analysisNote"></p>
+            </section>
           </section>
 
-          <section class="card card--media tab-panel" data-tab-panel="analysis">
-        <div class="media-panel media-panel--analysis" role="img" aria-label="Minimal notebook flat lay"></div>
-        <div class="media-panel-body">
-        <h2>Year Analysis</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Count</th>
-              </tr>
-            </thead>
-            <tbody id="analysisTable"></tbody>
-          </table>
-        </div>
-        <p class="hint" id="analysisNote"></p>
-        </div>
-          </section>
+          <section class="tab-panel" data-tab-panel="backup">
+            <section class="card card--media">
+              <div class="media-panel media-panel--backup" role="img" aria-label="Warm desk scene"></div>
+            </section>
+            <section class="card">
+              <h2>Import / Export</h2>
+              <p class="hint">
+                Export CSV for backups or import CSV files that follow the template.
+              </p>
+              <div class="backup-actions">
+                <button type="button" id="exportExpenses">Export Expenses CSV</button>
+                <button type="button" id="exportIncome">Export Income CSV</button>
+                <a class="action-link" href="/templates/expenses-template.csv" download>Download Expenses Template</a>
+                <a class="action-link" href="/templates/income-template.csv" download>Download Income Template</a>
+              </div>
+              <form id="importForm" class="backup-form">
+                <input id="importExpenses" type="file" accept=".csv" />
+                <button type="button" id="importExpensesBtn">Import Expenses CSV</button>
+                <input id="importIncome" type="file" accept=".csv" />
+                <button type="button" id="importIncomeBtn">Import Income CSV</button>
+              </form>
+              <p class="hint" id="importStatus"></p>
+            </section>
 
-          <section class="card card--media tab-panel" data-tab-panel="backup">
-        <div class="media-panel media-panel--backup" role="img" aria-label="Warm desk scene"></div>
-        <div class="media-panel-body">
-        <h2>Import / Export</h2>
-        <p class="hint">
-          Export CSV for backups or import CSV files that follow the template.
-        </p>
-        <div class="backup-actions">
-          <button type="button" id="exportExpenses">Export Expenses CSV</button>
-          <button type="button" id="exportIncome">Export Income CSV</button>
-          <a class="action-link" href="/templates/expenses-template.csv" download>Download Expenses Template</a>
-          <a class="action-link" href="/templates/income-template.csv" download>Download Income Template</a>
-        </div>
-        <form id="importForm" class="backup-form">
-          <input id="importExpenses" type="file" accept=".csv" />
-          <button type="button" id="importExpensesBtn">Import Expenses CSV</button>
-          <input id="importIncome" type="file" accept=".csv" />
-          <button type="button" id="importIncomeBtn">Import Income CSV</button>
-        </form>
-        <p class="hint" id="importStatus"></p>
-        </div>
-          </section>
-
-          <section class="card card--media tab-panel" data-tab-panel="backup">
-        <div class="media-panel media-panel--backup" role="img" aria-label="Soft light and notebook"></div>
-        <div class="media-panel-body">
-        <h2>Google Sheets Backup</h2>
-        <p class="hint">
-          Data stays on this device in IndexedDB. Use this section to back up
-          or restore from a Google Sheet you own.
-        </p>
-        <form id="backupForm" class="backup-form">
-          <input
-            id="googleClientId"
-            type="text"
-            placeholder="Google OAuth Client ID"
-            autocomplete="off"
-          />
-          <input
-            id="spreadsheetId"
-            type="text"
-            placeholder="Spreadsheet ID"
-            autocomplete="off"
-          />
-          <input
-            id="expensesSheet"
-            type="text"
-            placeholder="Expenses sheet name (default: Expenses)"
-            autocomplete="off"
-          />
-          <input
-            id="incomeSheet"
-            type="text"
-            placeholder="Income sheet name (default: Income)"
-            autocomplete="off"
-          />
-          <label class="checkbox">
-            <input id="autoBackup" type="checkbox" />
-            Auto-backup on changes
-          </label>
-          <div class="backup-actions">
-            <button type="button" id="connectGoogle">Connect Google</button>
-            <button type="button" id="restoreGoogle">Restore</button>
-            <button type="submit">Backup Now</button>
-          </div>
-        </form>
-        <p class="hint" id="backupStatus"></p>
-        </div>
+            <section class="card">
+              <h2>Google Sheets Backup</h2>
+              <p class="hint">
+                Data stays on this device in IndexedDB. Use this section to back up
+                or restore from a Google Sheet you own.
+              </p>
+              <form id="backupForm" class="backup-form">
+                <input
+                  id="googleClientId"
+                  type="text"
+                  placeholder="Google OAuth Client ID"
+                  autocomplete="off"
+                />
+                <input
+                  id="spreadsheetId"
+                  type="text"
+                  placeholder="Spreadsheet ID"
+                  autocomplete="off"
+                />
+                <input
+                  id="expensesSheet"
+                  type="text"
+                  placeholder="Expenses sheet name (default: Expenses)"
+                  autocomplete="off"
+                />
+                <input
+                  id="incomeSheet"
+                  type="text"
+                  placeholder="Income sheet name (default: Income)"
+                  autocomplete="off"
+                />
+                <label class="checkbox">
+                  <input id="autoBackup" type="checkbox" />
+                  Auto-backup on changes
+                </label>
+                <div class="backup-actions">
+                  <button type="button" id="connectGoogle">Connect Google</button>
+                  <button type="button" id="restoreGoogle">Restore</button>
+                  <button type="submit">Backup Now</button>
+                </div>
+              </form>
+              <p class="hint" id="backupStatus"></p>
+            </section>
           </section>
         </main>
+
+        <nav class="tabbar" aria-label="Primary">
+          <button type="button" class="tab active" data-tab="expenses">Expenses</button>
+          <button type="button" class="tab" data-tab="home">Income</button>
+          <button type="button" class="tab" data-tab="analysis">Analysis</button>
+          <button type="button" class="tab" data-tab="backup">Backup</button>
+        </nav>
       </div>
     </div>
 

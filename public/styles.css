@@ -134,6 +134,7 @@ h2 {
   position: relative;
   overflow: hidden;
   animation: rise 0.6s ease both;
+  margin: 12px 0;
 }
 
 .card > * {
@@ -169,25 +170,25 @@ h2 {
 
 .media-panel {
   min-height: 170px;
-  background-image: url("https://images.pexels.com/photos/8102011/pexels-photo-8102011.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=1200&q=80");
   background-size: cover;
   background-position: center;
 }
 
 .media-panel--home {
-  background-image: url("https://images.pexels.com/photos/33690958/pexels-photo-33690958.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=80");
 }
 
 .media-panel--expenses {
-  background-image: url("https://images.pexels.com/photos/32808882/pexels-photo-32808882.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80");
 }
 
 .media-panel--analysis {
-  background-image: url("https://images.pexels.com/photos/8102011/pexels-photo-8102011.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.unsplash.com/photo-1459257868276-5e65389e2722?auto=format&fit=crop&w=1200&q=80");
 }
 
 .media-panel--backup {
-  background-image: url("https://images.pexels.com/photos/31435670/pexels-photo-31435670.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80");
 }
 
 .media-panel-body {
@@ -465,13 +466,18 @@ th {
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   padding: 14px 18px;
-  position: sticky;
-  bottom: 0;
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(430px, 92vw);
+  border-radius: 18px;
   background: rgba(255, 253, 249, 0.95);
-  border-top: 1px solid rgba(180, 160, 140, 0.35);
+  border: 1px solid rgba(180, 160, 140, 0.35);
   backdrop-filter: blur(12px);
   z-index: 3;
   flex-shrink: 0;
+  box-shadow: 0 18px 28px rgba(20, 12, 8, 0.18);
 }
 
 .tab {
@@ -496,6 +502,39 @@ th {
 
 .tab-panel.active {
   display: block;
+}
+
+.expense-list,
+.analysis-list {
+  display: grid;
+  gap: 12px;
+}
+
+.expense-item,
+.analysis-item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(180, 160, 140, 0.35);
+  background: rgba(255, 253, 249, 0.95);
+  box-shadow: 0 10px 18px rgba(20, 12, 8, 0.08);
+  display: grid;
+  gap: 6px;
+}
+
+.expense-item-header,
+.analysis-item-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.expense-item-meta,
+.analysis-item-meta {
+  color: var(--muted);
+  font-size: 12px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .splash {
@@ -526,7 +565,7 @@ th {
 
 .splash-photo {
   min-height: 220px;
-  background-image: url("https://images.pexels.com/photos/33505096/pexels-photo-33505096.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.unsplash.com/photo-1461988320302-91e94c4795b8?auto=format&fit=crop&w=1200&q=80");
   background-size: cover;
   background-position: center;
 }
