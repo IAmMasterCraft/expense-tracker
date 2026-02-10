@@ -25,26 +25,9 @@
 
     <div class="app-shell">
       <div class="device">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Annual Expense Tracker</p>
-            <h1>Spend with intention</h1>
-            <p class="subhead">Local-first, calm, and quietly indulgent.</p>
-          </div>
-          <div class="month-select">
-            <label for="monthSelect">Month</label>
-            <select id="monthSelect" aria-label="Select month"></select>
-          </div>
-        </header>
-
-        <section class="hero">
-          <div class="hero-media" role="img" aria-label="Warm coffee and pastry on a table"></div>
-          <div class="hero-card">
-            <p class="eyebrow">Today’s Focus</p>
-            <h2>Make room for what tastes good.</h2>
-            <p class="hint">Capture your income and expenses in seconds.</p>
-          </div>
-        </section>
+        <div class="month-float">
+          <select id="monthSelect" aria-label="Select month"></select>
+        </div>
 
         <nav class="tabbar" aria-label="Primary">
           <button type="button" class="tab active" data-tab="home">Home</button>
@@ -55,6 +38,15 @@
 
         <main class="page">
           <section class="grid tab-panel active" data-tab-panel="home">
+            <section class="card card--media">
+              <div class="media-panel media-panel--home" role="img" aria-label="Warm pastry and coffee"></div>
+              <div class="media-panel-body hero-card">
+                <p class="eyebrow">Today’s Focus</p>
+                <h2 id="dailyPrompt">Make room for what tastes good.</h2>
+                <p class="hint">Capture your income and expenses in seconds.</p>
+              </div>
+            </section>
+
             <div class="card card--highlight">
           <h2>Income</h2>
           <form id="incomeForm" class="inline-form">
@@ -110,7 +102,9 @@
             </div>
           </section>
 
-          <section class="card tab-panel" data-tab-panel="expenses">
+          <section class="card card--media tab-panel" data-tab-panel="expenses">
+        <div class="media-panel media-panel--expenses" role="img" aria-label="Notebook and coffee"></div>
+        <div class="media-panel-body">
         <div class="card-header">
           <h2>Expenses</h2>
           <form id="expenseForm" class="expense-form">
@@ -158,10 +152,11 @@
             <tbody id="expenseTable"></tbody>
           </table>
         </div>
+        </div>
           </section>
 
           <section class="card card--media tab-panel" data-tab-panel="analysis">
-        <div class="media-panel" role="img" aria-label="Minimal notebook flat lay"></div>
+        <div class="media-panel media-panel--analysis" role="img" aria-label="Minimal notebook flat lay"></div>
         <div class="media-panel-body">
         <h2>Year Analysis</h2>
         <div class="table-wrap">
@@ -180,7 +175,9 @@
         </div>
           </section>
 
-          <section class="card tab-panel" data-tab-panel="backup">
+          <section class="card card--media tab-panel" data-tab-panel="backup">
+        <div class="media-panel media-panel--backup" role="img" aria-label="Warm desk scene"></div>
+        <div class="media-panel-body">
         <h2>Import / Export</h2>
         <p class="hint">
           Export CSV for backups or import CSV files that follow the template.
@@ -198,9 +195,12 @@
           <button type="button" id="importIncomeBtn">Import Income CSV</button>
         </form>
         <p class="hint" id="importStatus"></p>
+        </div>
           </section>
 
-          <section class="card tab-panel" data-tab-panel="backup">
+          <section class="card card--media tab-panel" data-tab-panel="backup">
+        <div class="media-panel media-panel--backup" role="img" aria-label="Soft light and notebook"></div>
+        <div class="media-panel-body">
         <h2>Google Sheets Backup</h2>
         <p class="hint">
           Data stays on this device in IndexedDB. Use this section to back up
@@ -242,6 +242,7 @@
           </div>
         </form>
         <p class="hint" id="backupStatus"></p>
+        </div>
           </section>
         </main>
       </div>

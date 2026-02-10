@@ -70,6 +70,7 @@ const incomeSuggestions = document.getElementById('incomeSuggestions');
 const expenseSuggestions = document.getElementById('expenseSuggestions');
 const splash = document.getElementById('splash');
 const enterApp = document.getElementById('enterApp');
+const dailyPrompt = document.getElementById('dailyPrompt');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
@@ -1598,6 +1599,25 @@ function initTabs() {
   });
 }
 
+function setDailyPrompt() {
+  if (!dailyPrompt) return;
+  const prompts = [
+    'Make room for what tastes good.',
+    'Spend softly, save boldly.',
+    'Small choices, quiet abundance.',
+    'Make today’s spending feel intentional.',
+    'Nourish your budget with care.',
+    'Savor the wins, trim the noise.',
+    'Give every dollar a warm purpose.',
+    'Let your money breathe.',
+  ];
+  const today = new Date();
+  const start = new Date(today.getFullYear(), 0, 0);
+  const diff = today - start;
+  const day = Math.floor(diff / 86400000);
+  dailyPrompt.textContent = prompts[day % prompts.length];
+}
+
 function initSplash() {
   if (!splash) return;
   const hideSplash = () => splash.classList.add('hidden');
@@ -1609,6 +1629,7 @@ loadSettings()
   .then(() => {
     initTabs();
     initSplash();
+    setDailyPrompt();
     return refreshAll();
   })
   .catch((error) => {
