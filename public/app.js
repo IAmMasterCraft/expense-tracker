@@ -68,6 +68,8 @@ const incomeGuided = document.getElementById('incomeGuided');
 const expenseGuided = document.getElementById('expenseGuided');
 const incomeSuggestions = document.getElementById('incomeSuggestions');
 const expenseSuggestions = document.getElementById('expenseSuggestions');
+const splash = document.getElementById('splash');
+const enterApp = document.getElementById('enterApp');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
@@ -1577,8 +1579,38 @@ window.addEventListener('online', () => {
   maybeFlushQueue();
 });
 
+function initTabs() {
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-panel');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      tabs.forEach((btn) => btn.classList.remove('active'));
+      panels.forEach((panel) => panel.classList.remove('active'));
+      tab.classList.add('active');
+      panels.forEach((panel) => {
+        if (panel.dataset.tabPanel === target) {
+          panel.classList.add('active');
+        }
+      });
+    });
+  });
+}
+
+function initSplash() {
+  if (!splash) return;
+  const hideSplash = () => splash.classList.add('hidden');
+  enterApp?.addEventListener('click', hideSplash);
+  setTimeout(hideSplash, 2200);
+}
+
 loadSettings()
-  .then(refreshAll)
+  .then(() => {
+    initTabs();
+    initSplash();
+    return refreshAll();
+  })
   .catch((error) => {
     setStatus(expenseStatus, error.message, true);
   });

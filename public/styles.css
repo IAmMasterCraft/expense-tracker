@@ -161,7 +161,7 @@ h2 {
 
 .media-panel {
   min-height: 170px;
-  background-image: url("https://images.pexels.com/photos/10181354/pexels-photo-10181354.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.pexels.com/photos/15422330/pexels-photo-15422330.jpeg?auto=compress&cs=tinysrgb&h=1200");
   background-size: cover;
   background-position: center;
 }
@@ -437,7 +437,7 @@ th {
 .hero-media {
   min-height: 210px;
   border-radius: 24px;
-  background-image: url("https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-image: url("https://images.pexels.com/photos/10981045/pexels-photo-10981045.jpeg?auto=compress&cs=tinysrgb&h=1200");
   background-size: cover;
   background-position: center;
   box-shadow: 0 18px 30px rgba(20, 12, 8, 0.2);
@@ -449,4 +449,79 @@ th {
   padding: 16px 18px;
   border: 1px solid rgba(180, 160, 140, 0.35);
   box-shadow: 0 12px 24px rgba(20, 12, 8, 0.1);
+}
+
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 0 18px 16px;
+}
+
+.tab {
+  border-radius: 14px;
+  border: 1px solid rgba(182, 87, 47, 0.2);
+  background: rgba(255, 253, 249, 0.9);
+  padding: 10px 8px;
+  font-size: 13px;
+  color: var(--muted);
+  box-shadow: 0 8px 16px rgba(20, 12, 8, 0.08);
+}
+
+.tab.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border-color: transparent;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.splash {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(249, 240, 229, 0.95), rgba(233, 218, 198, 0.98));
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+.splash.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-card {
+  width: min(360px, 86vw);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 28px;
+  border: 1px solid rgba(182, 87, 47, 0.2);
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(20, 12, 8, 0.2);
+  animation: rise 0.8s ease both;
+}
+
+.splash-photo {
+  min-height: 220px;
+  background-image: url("https://images.pexels.com/photos/33505096/pexels-photo-33505096.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-size: cover;
+  background-position: center;
+}
+
+.splash-content {
+  padding: 18px 20px 24px;
+  text-align: left;
+}
+
+.splash-button {
+  width: 100%;
+  margin-top: 16px;
+  border-radius: 14px;
 }
