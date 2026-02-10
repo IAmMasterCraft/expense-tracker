@@ -11,21 +11,32 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="page">
-      <header class="header">
-        <div class="header-text">
-          <p class="eyebrow">Annual Expense Tracker</p>
-          <h1>Track expenses and balance across the year</h1>
-          <p class="subhead">A local ledger with a quiet focus on every dollar.</p>
-        </div>
-        <div class="month-select">
-          <label for="monthSelect">Month</label>
-          <select id="monthSelect" aria-label="Select month"></select>
-        </div>
-      </header>
+    <div class="app-shell">
+      <div class="device">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Annual Expense Tracker</p>
+            <h1>Spend with intention</h1>
+            <p class="subhead">Local-first, calm, and quietly indulgent.</p>
+          </div>
+          <div class="month-select">
+            <label for="monthSelect">Month</label>
+            <select id="monthSelect" aria-label="Select month"></select>
+          </div>
+        </header>
 
-      <section class="grid">
-        <div class="card card--highlight">
+        <section class="hero">
+          <div class="hero-media" role="img" aria-label="Warm coffee and pastry on a table"></div>
+          <div class="hero-card">
+            <p class="eyebrow">Today’s Focus</p>
+            <h2>Make room for what tastes good.</h2>
+            <p class="hint">Capture your income and expenses in seconds.</p>
+          </div>
+        </section>
+
+        <main class="page">
+          <section class="grid">
+            <div class="card card--highlight">
           <h2>Income</h2>
           <form id="incomeForm" class="inline-form">
             <input
@@ -45,9 +56,9 @@
           <p class="hint" id="incomeStatus"></p>
           <p class="hint" id="incomeDictationStatus"></p>
           <div class="suggestions" id="incomeSuggestions"></div>
-        </div>
+            </div>
 
-        <div class="card">
+            <div class="card">
           <h2>Month Summary</h2>
           <div class="summary">
             <div>
@@ -59,9 +70,9 @@
               <strong id="monthBalance">$0.00</strong>
             </div>
           </div>
-        </div>
+            </div>
 
-        <div class="card">
+            <div class="card">
           <h2>Year Snapshot</h2>
           <div class="summary">
             <div>
@@ -77,10 +88,10 @@
               <strong id="yearBalance">$0.00</strong>
             </div>
           </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
-      <section class="card">
+          <section class="card">
         <div class="card-header">
           <h2>Expenses</h2>
           <form id="expenseForm" class="expense-form">
@@ -128,9 +139,11 @@
             <tbody id="expenseTable"></tbody>
           </table>
         </div>
-      </section>
+          </section>
 
-      <section class="card">
+          <section class="card card--media">
+        <div class="media-panel" role="img" aria-label="Minimal notebook flat lay"></div>
+        <div class="media-panel-body">
         <h2>Year Analysis</h2>
         <div class="table-wrap">
           <table>
@@ -145,9 +158,10 @@
           </table>
         </div>
         <p class="hint" id="analysisNote"></p>
-      </section>
+        </div>
+          </section>
 
-      <section class="card">
+          <section class="card">
         <h2>Import / Export</h2>
         <p class="hint">
           Export CSV for backups or import CSV files that follow the template.
@@ -165,9 +179,9 @@
           <button type="button" id="importIncomeBtn">Import Income CSV</button>
         </form>
         <p class="hint" id="importStatus"></p>
-      </section>
+          </section>
 
-      <section class="card">
+          <section class="card">
         <h2>Google Sheets Backup</h2>
         <p class="hint">
           Data stays on this device in IndexedDB. Use this section to back up
@@ -209,8 +223,10 @@
           </div>
         </form>
         <p class="hint" id="backupStatus"></p>
-      </section>
-    </main>
+          </section>
+        </main>
+      </div>
+    </div>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="/app.js"></script>

@@ -47,31 +47,44 @@ body::before {
 
 body::after {
   background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
-  opacity: 0.5;
+  opacity: 0.4;
   mix-blend-mode: multiply;
 }
 
+.app-shell {
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px 64px;
+}
+
+.device {
+  width: min(430px, 100%);
+  border-radius: 36px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(180, 160, 140, 0.4);
+  box-shadow: 0 30px 60px rgba(28, 20, 14, 0.18);
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+}
+
 .page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 36px 22px 72px;
+  padding: 20px 18px 28px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 18px;
 }
 
-.header {
+.topbar {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 32px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 18px 16px;
   border-bottom: 1px solid rgba(180, 160, 140, 0.4);
-  padding-bottom: 18px;
+  background: rgba(255, 253, 249, 0.85);
 }
 
-.header-text {
-  max-width: 620px;
+.topbar .eyebrow {
+  margin-bottom: 6px;
 }
 
 .eyebrow {
@@ -84,7 +97,7 @@ body::after {
 
 h1 {
   margin: 0;
-  font-size: clamp(32px, 4vw, 46px);
+  font-size: clamp(28px, 5vw, 36px);
   font-weight: 600;
   font-family: "Fraunces", serif;
   letter-spacing: -0.02em;
@@ -94,7 +107,7 @@ h1 {
   margin: 10px 0 0;
   color: var(--muted);
   font-size: 15px;
-  max-width: 520px;
+  max-width: 320px;
 }
 
 h2 {
@@ -137,6 +150,24 @@ h2 {
 .card--highlight {
   border-color: rgba(182, 87, 47, 0.3);
   box-shadow: var(--shadow);
+}
+
+.card--media {
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+  gap: 0;
+}
+
+.media-panel {
+  min-height: 170px;
+  background-image: url("https://images.pexels.com/photos/10181354/pexels-photo-10181354.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-size: cover;
+  background-position: center;
+}
+
+.media-panel-body {
+  padding: 20px;
 }
 
 .card-header {
@@ -215,7 +246,7 @@ button:hover {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 
@@ -240,6 +271,7 @@ button:hover {
 .inline-form {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .expense-form,
@@ -365,15 +397,11 @@ th {
 }
 
 @media (max-width: 720px) {
-  .header {
-    align-items: flex-start;
+  .device {
+    border-radius: 28px;
   }
 
-  .inline-form {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
+  .inline-form,
   .expense-form,
   .backup-form {
     flex-direction: column;
@@ -398,4 +426,27 @@ th {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.hero {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px 10px;
+}
+
+.hero-media {
+  min-height: 210px;
+  border-radius: 24px;
+  background-image: url("https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg?auto=compress&cs=tinysrgb&h=1200");
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 18px 30px rgba(20, 12, 8, 0.2);
+}
+
+.hero-card {
+  background: rgba(255, 253, 249, 0.92);
+  border-radius: 18px;
+  padding: 16px 18px;
+  border: 1px solid rgba(180, 160, 140, 0.35);
+  box-shadow: 0 12px 24px rgba(20, 12, 8, 0.1);
 }
