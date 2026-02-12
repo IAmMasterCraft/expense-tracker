@@ -484,12 +484,15 @@ async function loadYearSummary() {
   CATEGORIES.forEach((category) => {
     monthByCategory.set(category, { amount: 0, count: 0 });
   });
+  let monthUnaccounted = 0;
 
   monthExpenses.forEach((row) => {
     const entry = monthByCategory.get(row.category);
     if (entry) {
       entry.amount += Number(row.amount || 0);
       entry.count += 1;
+    } else {
+      monthUnaccounted += Number(row.amount || 0);
     }
   });
 
@@ -502,6 +505,7 @@ async function loadYearSummary() {
     monthlyRows,
     monthIncomeTotal,
     monthExpenseTotal,
+    monthUnaccounted,
     unaccounted,
   };
 
@@ -725,7 +729,8 @@ function renderAnalysisByScope() {
     analysisNote.textContent =
       `${MONTHS[currentMonth - 1]}: Income ${formatCurrency(analysisData.monthIncomeTotal)}, ` +
       `Expense ${formatCurrency(analysisData.monthExpenseTotal)}, ` +
-      `Balance ${formatCurrency(analysisData.monthIncomeTotal - analysisData.monthExpenseTotal)}.`;
+      `Balance ${formatCurrency(analysisData.monthIncomeTotal - analysisData.monthExpenseTotal)}, ` +
+      `Unaccounted ${formatCurrency(analysisData.monthUnaccounted)}.`;
     return;
   }
 
