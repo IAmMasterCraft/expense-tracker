@@ -101,6 +101,7 @@ let currentCurrency = 'USD';
 let setActiveTabFn = null;
 let hasSeenHelp = false;
 let hasSeenSplash = false;
+let analysisResizeTimer = null;
 let tourIndex = 0;
 let currentTourTarget = null;
 
@@ -2283,6 +2284,19 @@ function initAnalysisSwitch() {
     analysisScope = 'year';
     renderAnalysisByScope();
   });
+
+  const redrawAnalysis = () => {
+    if (!analysisData) return;
+    renderAnalysisByScope();
+  };
+  const scheduleRedraw = () => {
+    if (analysisResizeTimer) clearTimeout(analysisResizeTimer);
+    analysisResizeTimer = setTimeout(redrawAnalysis, 90);
+  };
+
+  window.addEventListener('resize', scheduleRedraw, { passive: true });
+  window.addEventListener('orientationchange', scheduleRedraw, { passive: true });
+
   renderAnalysisByScope();
 }
 
