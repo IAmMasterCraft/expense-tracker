@@ -76,6 +76,14 @@ const splash = document.getElementById('splash');
 const enterApp = document.getElementById('enterApp');
 const dailyPrompt = document.getElementById('dailyPrompt');
 const toastHost = document.getElementById('toastHost');
+const helpTrigger = document.getElementById('helpTrigger');
+const tourOverlay = document.getElementById('tourOverlay');
+const tourStepLabel = document.getElementById('tourStepLabel');
+const tourTitle = document.getElementById('tourTitle');
+const tourBody = document.getElementById('tourBody');
+const tourPrev = document.getElementById('tourPrev');
+const tourSkip = document.getElementById('tourSkip');
+const tourNext = document.getElementById('tourNext');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
@@ -90,6 +98,10 @@ let lastToastAt = 0;
 let analysisScope = 'month';
 let analysisData = null;
 let currentCurrency = 'USD';
+let setActiveTabFn = null;
+let hasSeenHelp = false;
+let tourIndex = 0;
+let currentTourTarget = null;
 
 function formatCurrency(value) {
   const number = Number(value || 0);
@@ -1767,6 +1779,7 @@ async function loadSettings() {
   incomeSheet.value = (await getSetting('incomeSheet')) || 'Income';
   autoBackup.checked = Boolean(await getSetting('autoBackup'));
   const savedCurrency = (await getSetting('currency')) || 'USD';
+  hasSeenHelp = Boolean(await getSetting('onboardingSeen'));
   currentCurrency = savedCurrency;
   buildCurrencyOptions(currencySelect, savedCurrency);
 }
@@ -1938,6 +1951,7 @@ function initTabs() {
     });
     if (page) page.scrollTop = 0;
   };
+  setActiveTabFn = setActiveTab;
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -2003,6 +2017,125 @@ function initTabs() {
   );
 }
 
+function getTourSteps() {
+  return [
+    {
+      tab: 'expenses',
+      selector: '.month-float',
+      title: 'Month and Currency',
+      body: 'Use these controls to switch month and currency formatting.',
+    },
+    {
+      tab: 'expenses',
+      selector: '#expenseForm',
+      title: 'Track Expenses',
+      body: 'Add expense name, amount, category, and completion status here.',
+    },
+    {
+      tab: 'home',
+      selector: '#incomeForm',
+      title: 'Track Income',
+      body: 'Save monthly income values in this section.',
+    },
+    {
+      tab: 'analysis',
+      selector: '.analysis-charts',
+      title: 'Analysis and Charts',
+      body: 'View summary charts first, then category-level analysis cards.',
+    },
+    {
+      tab: 'backup',
+      selector: '#backupForm',
+      title: 'Backup and Restore',
+      body: 'Connect Google Sheets or import/export CSV backups from here.',
+    },
+    {
+      tab: 'expenses',
+      selector: '.tabbar',
+      title: 'Tab Navigation',
+      body: 'Use these tabs or swipe left/right on content to switch sections.',
+    },
+  ];
+}
+
+function clearTourTarget() {
+  if (!currentTourTarget) return;
+  currentTourTarget.classList.remove('tour-target');
+  currentTourTarget = null;
+}
+
+function setTourTarget(el) {
+  clearTourTarget();
+  if (!el) return;
+  currentTourTarget = el;
+  currentTourTarget.classList.add('tour-target');
+  currentTourTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function renderTourStep() {
+  if (!tourOverlay || tourOverlay.classList.contains('hidden')) return;
+  const steps = getTourSteps();
+  if (!steps.length) return;
+  const step = steps[tourIndex];
+  if (!step) return;
+
+  if (step.tab && setActiveTabFn) {
+    setActiveTabFn(step.tab);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  const target = step.selector ? document.querySelector(step.selector) : null;
+  setTourTarget(target);
+
+  tourStepLabel.textContent = `Step ${tourIndex + 1} of ${steps.length}`;
+  tourTitle.textContent = step.title;
+  tourBody.textContent = step.body;
+  tourPrev.disabled = tourIndex === 0;
+  tourNext.textContent = tourIndex === steps.length - 1 ? 'Finish' : 'Next';
+}
+
+function finishTour(markSeen = true) {
+  if (!tourOverlay) return;
+  tourOverlay.classList.add('hidden');
+  clearTourTarget();
+  if (markSeen) {
+    hasSeenHelp = true;
+    setSetting('onboardingSeen', true);
+  }
+}
+
+function startTour(force = false) {
+  if (!tourOverlay) return;
+  if (!force && hasSeenHelp) return;
+  tourIndex = 0;
+  tourOverlay.classList.remove('hidden');
+  renderTourStep();
+}
+
+function initTour() {
+  if (!tourOverlay || !tourNext || !tourPrev || !tourSkip) return;
+
+  helpTrigger?.addEventListener('click', () => startTour(true));
+
+  tourNext.addEventListener('click', async () => {
+    const steps = getTourSteps();
+    if (tourIndex >= steps.length - 1) {
+      finishTour(true);
+      return;
+    }
+    tourIndex += 1;
+    await renderTourStep();
+  });
+
+  tourPrev.addEventListener('click', async () => {
+    if (tourIndex <= 0) return;
+    tourIndex -= 1;
+    await renderTourStep();
+  });
+
+  tourSkip.addEventListener('click', () => finishTour(true));
+}
+
 function initAnalysisSwitch() {
   if (!analysisScopeMonthBtn || !analysisScopeYearBtn) return;
   analysisScopeMonthBtn.addEventListener('click', () => {
@@ -2046,9 +2179,12 @@ loadSettings()
   .then(() => {
     initTabs();
     initAnalysisSwitch();
+    initTour();
     initSplash();
     setDailyPrompt();
-    return refreshAll();
+    return refreshAll().then(() => {
+      startTour(false);
+    });
   })
   .catch((error) => {
     notify(error.message || 'Unable to initialize app.', 'error');

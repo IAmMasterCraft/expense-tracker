@@ -29,6 +29,7 @@
     <div class="app-shell">
       <div class="device">
         <div class="month-float">
+          <button type="button" id="helpTrigger" class="help-trigger" aria-label="Help and walkthrough">?</button>
           <select id="currencySelect" aria-label="Select currency"></select>
           <select id="monthSelect" aria-label="Select month"></select>
         </div>
@@ -241,6 +242,18 @@
         </main>
 
         <div class="toast-host" id="toastHost" aria-live="polite" aria-atomic="true"></div>
+        <div class="tour-overlay hidden" id="tourOverlay" aria-live="polite">
+          <div class="tour-card">
+            <p class="eyebrow" id="tourStepLabel">Step 1</p>
+            <h2 id="tourTitle">Welcome</h2>
+            <p class="hint" id="tourBody">This short guide shows how to use the app.</p>
+            <div class="tour-actions">
+              <button type="button" class="ghost-button" id="tourPrev">Back</button>
+              <button type="button" class="ghost-button" id="tourSkip">Skip</button>
+              <button type="button" id="tourNext">Next</button>
+            </div>
+          </div>
+        </div>
 
         <nav class="tabbar" aria-label="Primary">
           <button type="button" class="tab active" data-tab="expenses">Expenses</button>
