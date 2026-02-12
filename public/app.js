@@ -764,9 +764,9 @@ function renderAnalysisByScope() {
     drawCategoryPieChart(analysisData.byCategoryMonth);
     renderCategoryCards(analysisData.byCategoryMonth);
     analysisNote.textContent =
-      `${MONTHS[currentMonth - 1]}: Income ${formatCurrency(analysisData.monthIncomeTotal)}, ` +
-      `Expense ${formatCurrency(analysisData.monthExpenseTotal)}, ` +
-      `Balance ${formatCurrency(analysisData.monthIncomeTotal - analysisData.monthExpenseTotal)}, ` +
+      // `${MONTHS[currentMonth - 1]}: Income ${formatCurrency(analysisData.monthIncomeTotal)}, ` +
+      // `Expense ${formatCurrency(analysisData.monthExpenseTotal)}, ` +
+      // `Balance ${formatCurrency(analysisData.monthIncomeTotal - analysisData.monthExpenseTotal)}, ` +
       `Unaccounted ${formatCurrency(analysisData.monthUnaccounted)}.`;
     return;
   }
