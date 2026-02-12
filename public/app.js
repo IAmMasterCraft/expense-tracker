@@ -377,8 +377,18 @@ async function loadExpenses() {
 function renderExpenses() {
   if (expenseTable) expenseTable.innerHTML = '';
   if (expenseList) expenseList.innerHTML = '';
+  if (!expenseList) return;
+
+  if (!currentExpenses.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'No expenses yet for this month. Add your first entry above.';
+    expenseList.appendChild(empty);
+    monthTotal.textContent = formatCurrency(0);
+    return;
+  }
+
   currentExpenses.forEach((expense) => {
-    if (!expenseList) return;
     const card = document.createElement('div');
     card.className = 'expense-item';
 
@@ -529,6 +539,19 @@ async function loadYearSummary() {
 function renderCategoryCards(byCategoryMap) {
   if (!analysisList) return;
   analysisList.innerHTML = '';
+  const totalItems = Array.from(byCategoryMap.values()).reduce(
+    (sum, entry) => sum + Number(entry?.count || 0),
+    0
+  );
+
+  if (!totalItems) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'No analyzed expenses for this scope yet.';
+    analysisList.appendChild(empty);
+    return;
+  }
+
   CATEGORIES.forEach((category) => {
     const entry = byCategoryMap.get(category) || { amount: 0, count: 0 };
     const card = document.createElement('div');
