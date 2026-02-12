@@ -1945,6 +1945,14 @@ function initTabs() {
   const page = document.querySelector('.page');
   const tabOrder = tabs.map((tab) => tab.dataset.tab).filter(Boolean);
   const interactiveSelector = 'input, textarea, select, button, a, label';
+  const updateScrollAffordance = () => {
+    if (!page) return;
+    const maxScrollTop = Math.max(0, page.scrollHeight - page.clientHeight);
+    const canScrollUp = page.scrollTop > 6;
+    const canScrollDown = maxScrollTop - page.scrollTop > 6;
+    page.classList.toggle('page--can-scroll-up', canScrollUp);
+    page.classList.toggle('page--can-scroll-down', canScrollDown);
+  };
 
   const focusTabByIndex = (index) => {
     if (index < 0 || index >= tabs.length) return;
@@ -1967,6 +1975,7 @@ function initTabs() {
       panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
     });
     if (page) page.scrollTop = 0;
+    requestAnimationFrame(updateScrollAffordance);
   };
   setActiveTabFn = setActiveTab;
   const switchTabByDelta = (deltaX, deltaY = 0) => {
@@ -2021,6 +2030,14 @@ function initTabs() {
   if (initialActiveTab) setActiveTab(initialActiveTab);
 
   if (!page) return;
+
+  page.addEventListener('scroll', updateScrollAffordance, { passive: true });
+  window.addEventListener('resize', updateScrollAffordance, { passive: true });
+  if (typeof ResizeObserver === 'function') {
+    const observer = new ResizeObserver(() => updateScrollAffordance());
+    observer.observe(page);
+  }
+  updateScrollAffordance();
 
   let startX = 0;
   let startY = 0;
