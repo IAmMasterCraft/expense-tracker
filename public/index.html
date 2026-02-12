@@ -35,7 +35,14 @@
         </div>
 
         <main class="page">
-          <section class="tab-panel active" data-tab-panel="expenses">
+          <section
+            class="tab-panel active"
+            data-tab-panel="expenses"
+            id="panel-expenses"
+            role="tabpanel"
+            aria-labelledby="tab-expenses"
+            tabindex="0"
+          >
             <section class="card card--media">
               <div class="media-panel media-panel--expenses" role="img" aria-label="Notebook and coffee"></div>
             </section>
@@ -96,7 +103,15 @@
             </section>
           </section>
 
-          <section class="tab-panel" data-tab-panel="home">
+          <section
+            class="tab-panel"
+            data-tab-panel="home"
+            id="panel-home"
+            role="tabpanel"
+            aria-labelledby="tab-home"
+            tabindex="0"
+            hidden
+          >
             <section class="card card--media">
               <div class="media-panel media-panel--home" role="img" aria-label="Warm pastry and coffee"></div>
             </section>
@@ -162,7 +177,15 @@
             </section>
           </section>
 
-          <section class="tab-panel" data-tab-panel="analysis">
+          <section
+            class="tab-panel"
+            data-tab-panel="analysis"
+            id="panel-analysis"
+            role="tabpanel"
+            aria-labelledby="tab-analysis"
+            tabindex="0"
+            hidden
+          >
             <section class="card card--media">
               <div class="media-panel media-panel--analysis" role="img" aria-label="Minimal notebook flat lay"></div>
             </section>
@@ -185,7 +208,15 @@
             </section>
           </section>
 
-          <section class="tab-panel" data-tab-panel="backup">
+          <section
+            class="tab-panel"
+            data-tab-panel="backup"
+            id="panel-backup"
+            role="tabpanel"
+            aria-labelledby="tab-backup"
+            tabindex="0"
+            hidden
+          >
             <section class="card card--media">
               <div class="media-panel media-panel--backup" role="img" aria-label="Warm desk scene"></div>
             </section>
@@ -285,11 +316,55 @@
           </div>
         </div>
 
-        <nav class="tabbar" aria-label="Primary">
-          <button type="button" class="tab active" data-tab="expenses">Expenses</button>
-          <button type="button" class="tab" data-tab="home">Income</button>
-          <button type="button" class="tab" data-tab="analysis">Analysis</button>
-          <button type="button" class="tab" data-tab="backup">Backup</button>
+        <nav class="tabbar" aria-label="Primary" role="tablist">
+          <button
+            type="button"
+            class="tab active"
+            data-tab="expenses"
+            id="tab-expenses"
+            role="tab"
+            aria-controls="panel-expenses"
+            aria-selected="true"
+            tabindex="0"
+          >
+            Expenses
+          </button>
+          <button
+            type="button"
+            class="tab"
+            data-tab="home"
+            id="tab-home"
+            role="tab"
+            aria-controls="panel-home"
+            aria-selected="false"
+            tabindex="-1"
+          >
+            Income
+          </button>
+          <button
+            type="button"
+            class="tab"
+            data-tab="analysis"
+            id="tab-analysis"
+            role="tab"
+            aria-controls="panel-analysis"
+            aria-selected="false"
+            tabindex="-1"
+          >
+            Analysis
+          </button>
+          <button
+            type="button"
+            class="tab"
+            data-tab="backup"
+            id="tab-backup"
+            role="tab"
+            aria-controls="panel-backup"
+            aria-selected="false"
+            tabindex="-1"
+          >
+            Backup
+          </button>
         </nav>
       </div>
     </div>

@@ -1941,14 +1941,25 @@ function initTabs() {
   const tabOrder = tabs.map((tab) => tab.dataset.tab).filter(Boolean);
   const interactiveSelector = 'input, textarea, select, button, a, label';
 
+  const focusTabByIndex = (index) => {
+    if (index < 0 || index >= tabs.length) return;
+    tabs[index].focus();
+  };
+
   const setActiveTab = (target) => {
     tabs.forEach((btn) => btn.classList.remove('active'));
     panels.forEach((panel) => panel.classList.remove('active'));
     tabs.forEach((tab) => {
-      if (tab.dataset.tab === target) tab.classList.add('active');
+      const isActive = tab.dataset.tab === target;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      tab.setAttribute('tabindex', isActive ? '0' : '-1');
     });
     panels.forEach((panel) => {
-      if (panel.dataset.tabPanel === target) panel.classList.add('active');
+      const isActive = panel.dataset.tabPanel === target;
+      panel.classList.toggle('active', isActive);
+      panel.hidden = !isActive;
+      panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
     });
     if (page) page.scrollTop = 0;
   };
@@ -1972,7 +1983,37 @@ function initTabs() {
     tab.addEventListener('click', () => {
       setActiveTab(tab.dataset.tab);
     });
+    tab.addEventListener('keydown', (event) => {
+      const currentIndex = tabs.indexOf(tab);
+      if (currentIndex < 0) return;
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        focusTabByIndex((currentIndex + 1) % tabs.length);
+        setActiveTab(tabOrder[(currentIndex + 1) % tabs.length]);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        focusTabByIndex(nextIndex);
+        setActiveTab(tabOrder[nextIndex]);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        focusTabByIndex(0);
+        setActiveTab(tabOrder[0]);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        const last = tabs.length - 1;
+        focusTabByIndex(last);
+        setActiveTab(tabOrder[last]);
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        setActiveTab(tab.dataset.tab);
+      }
+    });
   });
+
+  const initialActiveTab = tabs.find((tab) => tab.classList.contains('active'))?.dataset.tab || tabOrder[0];
+  if (initialActiveTab) setActiveTab(initialActiveTab);
 
   if (!page) return;
 
