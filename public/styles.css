@@ -206,25 +206,25 @@ h2 {
 
 .media-panel {
   min-height: 170px;
-  background-image: url("https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=1200&q=80");
+  background-image: url("/images/photo-1509042239860-f550ce710b93.avif");
   background-size: cover;
   background-position: center;
 }
 
 .media-panel--home {
-  background-image: url("https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=80");
+  background-image: url("/images/photo-1509042239860-f550ce710b93.avif");
 }
 
 .media-panel--expenses {
-  background-image: url("https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80");
+  background-image: url("/images/photo-1504674900247-0877df9cc836.avif");
 }
 
 .media-panel--analysis {
-  background-image: url("https://images.unsplash.com/photo-1459257868276-5e65389e2722?auto=format&fit=crop&w=1200&q=80");
+  background-image: url("/images/photo-1459257868276-5e65389e2722.avif");
 }
 
 .media-panel--backup {
-  background-image: url("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80");
+  background-image: url("/images/photo-1495474472287-4d71bcdd2085.avif");
 }
 
 .media-panel-body {
