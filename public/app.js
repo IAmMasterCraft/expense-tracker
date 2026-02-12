@@ -27,6 +27,7 @@ const DB_NAME = 'expense-tracker-db';
 const DB_VERSION = 2;
 
 const monthSelect = document.getElementById('monthSelect');
+const currencySelect = document.getElementById('currencySelect');
 const incomeForm = document.getElementById('incomeForm');
 const incomeAmount = document.getElementById('incomeAmount');
 const expenseForm = document.getElementById('expenseForm');
@@ -89,13 +90,23 @@ let guidedSession = null;
 let lastToastMessage = '';
 let lastToastAt = 0;
 let analysisMode = 'month';
+let currentCurrency = 'USD';
 
 function formatCurrency(value) {
   const number = Number(value || 0);
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(number);
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currentCurrency,
+      maximumFractionDigits: 2,
+    }).format(number);
+  } catch {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }).format(number);
+  }
 }
 
 function setStatus(el, message, isError = false) {
@@ -135,6 +146,30 @@ function buildSelectOptions(select, options) {
     opt.textContent = label;
     select.appendChild(opt);
   });
+}
+
+function getSupportedCurrencies() {
+  if (typeof Intl.supportedValuesOf === 'function') {
+    const supported = Intl.supportedValuesOf('currency');
+    if (Array.isArray(supported) && supported.length) {
+      return supported;
+    }
+  }
+  return ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'NGN', 'ZAR', 'BRL', 'MXN'];
+}
+
+function buildCurrencyOptions(select, preferred = 'USD') {
+  if (!select) return;
+  const currencies = getSupportedCurrencies();
+  if (!currencies.includes(preferred)) currencies.unshift(preferred);
+  select.innerHTML = '';
+  currencies.forEach((code) => {
+    const option = document.createElement('option');
+    option.value = code;
+    option.textContent = code;
+    select.appendChild(option);
+  });
+  select.value = preferred;
 }
 
 function buildCategoryOptions(select) {
@@ -1608,15 +1643,26 @@ async function loadSettings() {
   expensesSheet.value = (await getSetting('expensesSheet')) || 'Expenses';
   incomeSheet.value = (await getSetting('incomeSheet')) || 'Income';
   autoBackup.checked = Boolean(await getSetting('autoBackup'));
+  const savedCurrency = (await getSetting('currency')) || 'USD';
+  currentCurrency = savedCurrency;
+  buildCurrencyOptions(currencySelect, savedCurrency);
 }
 
 buildSelectOptions(monthSelect, MONTHS);
 monthSelect.value = String(currentMonth);
 buildCategoryOptions(expenseCategory);
+buildCurrencyOptions(currencySelect, 'USD');
 
 monthSelect.addEventListener('change', async (event) => {
   currentMonth = Number(event.target.value);
   await refreshAll();
+});
+
+currencySelect.addEventListener('change', async (event) => {
+  currentCurrency = event.target.value || 'USD';
+  await setSetting('currency', currentCurrency);
+  await refreshAll();
+  notify(`Currency set to ${currentCurrency}.`, 'success');
 });
 
 incomeForm.addEventListener('submit', async (event) => {
