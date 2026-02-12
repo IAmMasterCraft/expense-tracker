@@ -2015,6 +2015,43 @@ function initTabs() {
     },
     { passive: true }
   );
+
+  let mouseDown = false;
+  let mouseStartX = 0;
+  let mouseStartY = 0;
+  let mouseStartedOnInteractive = false;
+
+  page.addEventListener('mousedown', (event) => {
+    if (event.button !== 0) return;
+    mouseDown = true;
+    mouseStartX = event.clientX;
+    mouseStartY = event.clientY;
+    mouseStartedOnInteractive = Boolean(event.target.closest(interactiveSelector));
+  });
+
+  page.addEventListener('mouseup', (event) => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    if (mouseStartedOnInteractive) return;
+
+    const deltaX = event.clientX - mouseStartX;
+    const deltaY = event.clientY - mouseStartY;
+    if (Math.abs(deltaX) < 60) return;
+    if (Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
+
+    const activeTab = tabs.find((tab) => tab.classList.contains('active'));
+    const activeIndex = tabOrder.indexOf(activeTab?.dataset.tab);
+    if (activeIndex < 0) return;
+
+    const nextIndex = deltaX < 0 ? activeIndex + 1 : activeIndex - 1;
+    if (nextIndex < 0 || nextIndex >= tabOrder.length) return;
+
+    setActiveTab(tabOrder[nextIndex]);
+  });
+
+  page.addEventListener('mouseleave', () => {
+    mouseDown = false;
+  });
 }
 
 function getTourSteps() {
