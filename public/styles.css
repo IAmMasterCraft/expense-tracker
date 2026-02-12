@@ -249,6 +249,18 @@ input {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Hide native number spinners to keep mobile-style inputs clean */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 select:focus,
 input:focus {
   outline: none;
