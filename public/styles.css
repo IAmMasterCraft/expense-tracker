@@ -78,6 +78,13 @@ body::after {
   gap: 18px;
   flex: 1;
   overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.page::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .month-float {
