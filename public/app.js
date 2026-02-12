@@ -38,6 +38,7 @@ const expenseCompleted = document.getElementById('expenseCompleted');
 const expenseStatus = document.getElementById('expenseStatus');
 const expenseTable = document.getElementById('expenseTable');
 const expenseList = document.getElementById('expenseList');
+const monthIncome = document.getElementById('monthIncome');
 const monthTotal = document.getElementById('monthTotal');
 const monthBalance = document.getElementById('monthBalance');
 const yearIncome = document.getElementById('yearIncome');
@@ -433,6 +434,7 @@ async function loadYearSummary() {
 function updateBalance() {
   const incomeValue = Number(incomeAmount.value || 0);
   const total = currentExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  monthIncome.textContent = formatCurrency(incomeValue);
   monthBalance.textContent = formatCurrency(incomeValue - total);
 }
 
