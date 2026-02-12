@@ -100,6 +100,7 @@ let analysisData = null;
 let currentCurrency = 'USD';
 let setActiveTabFn = null;
 let hasSeenHelp = false;
+let hasSeenSplash = false;
 let tourIndex = 0;
 let currentTourTarget = null;
 
@@ -1783,6 +1784,7 @@ async function loadSettings() {
   autoBackup.checked = Boolean(await getSetting('autoBackup'));
   const savedCurrency = (await getSetting('currency')) || 'USD';
   hasSeenHelp = Boolean(await getSetting('onboardingSeen'));
+  hasSeenSplash = Boolean(await getSetting('splashSeen'));
   currentCurrency = savedCurrency;
   buildCurrencyOptions(currencySelect, savedCurrency);
 }
@@ -2288,9 +2290,21 @@ function setDailyPrompt() {
 
 function initSplash() {
   if (!splash) return;
-  const hideSplash = () => splash.classList.add('hidden');
-  enterApp?.addEventListener('click', hideSplash);
-  setTimeout(hideSplash, 4200);
+  const hideSplash = (markSeen = true) => {
+    splash.classList.add('hidden');
+    if (markSeen && !hasSeenSplash) {
+      hasSeenSplash = true;
+      setSetting('splashSeen', true);
+    }
+  };
+
+  if (hasSeenSplash) {
+    hideSplash(false);
+    return;
+  }
+
+  enterApp?.addEventListener('click', () => hideSplash(true));
+  setTimeout(() => hideSplash(true), 4200);
 }
 
 loadSettings()
