@@ -1622,22 +1622,84 @@ window.addEventListener('online', () => {
 });
 
 function initTabs() {
-  const tabs = document.querySelectorAll('.tab');
-  const panels = document.querySelectorAll('.tab-panel');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const panels = Array.from(document.querySelectorAll('.tab-panel'));
+  const page = document.querySelector('.page');
+  const tabOrder = tabs.map((tab) => tab.dataset.tab).filter(Boolean);
+
+  const setActiveTab = (target) => {
+    tabs.forEach((btn) => btn.classList.remove('active'));
+    panels.forEach((panel) => panel.classList.remove('active'));
+    tabs.forEach((tab) => {
+      if (tab.dataset.tab === target) tab.classList.add('active');
+    });
+    panels.forEach((panel) => {
+      if (panel.dataset.tabPanel === target) panel.classList.add('active');
+    });
+  };
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
-      const target = tab.dataset.tab;
-      tabs.forEach((btn) => btn.classList.remove('active'));
-      panels.forEach((panel) => panel.classList.remove('active'));
-      tab.classList.add('active');
-      panels.forEach((panel) => {
-        if (panel.dataset.tabPanel === target) {
-          panel.classList.add('active');
-        }
-      });
+      setActiveTab(tab.dataset.tab);
     });
   });
+
+  if (!page || !window.matchMedia('(pointer: coarse)').matches) return;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+  let startedOnInteractive = false;
+  const interactiveSelector = 'input, textarea, select, button, a, label';
+
+  page.addEventListener(
+    'touchstart',
+    (event) => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      tracking = true;
+      startedOnInteractive = Boolean(event.target.closest(interactiveSelector));
+    },
+    { passive: true }
+  );
+
+  page.addEventListener(
+    'touchend',
+    (event) => {
+      if (!tracking || startedOnInteractive || event.changedTouches.length !== 1) {
+        tracking = false;
+        return;
+      }
+
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+      tracking = false;
+
+      if (Math.abs(deltaX) < 60) return;
+      if (Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
+
+      const activeTab = tabs.find((tab) => tab.classList.contains('active'));
+      const activeIndex = tabOrder.indexOf(activeTab?.dataset.tab);
+      if (activeIndex < 0) return;
+
+      const nextIndex = deltaX < 0 ? activeIndex + 1 : activeIndex - 1;
+      if (nextIndex < 0 || nextIndex >= tabOrder.length) return;
+
+      setActiveTab(tabOrder[nextIndex]);
+    },
+    { passive: true }
+  );
+
+  page.addEventListener(
+    'touchcancel',
+    () => {
+      tracking = false;
+    },
+    { passive: true }
+  );
 }
 
 function setDailyPrompt() {
