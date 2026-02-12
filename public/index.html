@@ -51,22 +51,31 @@
                 <h2>Expenses</h2>
               </div>
               <form id="expenseForm" class="expense-form">
-                <input
-                  id="expenseName"
-                  type="text"
-                  placeholder="Expense name"
-                  maxlength="120"
-                  required
-                />
-                <input
-                  id="expenseAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Amount"
-                  required
-                />
-                <select id="expenseCategory" aria-label="Expense category"></select>
+                <label class="field field--wide" for="expenseName">
+                  <span class="field-label">Expense Name</span>
+                  <input
+                    id="expenseName"
+                    type="text"
+                    placeholder="Expense name"
+                    maxlength="120"
+                    required
+                  />
+                </label>
+                <label class="field field--amount" for="expenseAmount">
+                  <span class="field-label">Amount</span>
+                  <input
+                    id="expenseAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Amount"
+                    required
+                  />
+                </label>
+                <label class="field field--wide" for="expenseCategory">
+                  <span class="field-label">Category</span>
+                  <select id="expenseCategory" aria-label="Expense category"></select>
+                </label>
                 <label class="checkbox">
                   <input id="expenseCompleted" type="checkbox" />
                   Completed
@@ -95,14 +104,17 @@
             <section class="card card--highlight">
               <h2>Income</h2>
               <form id="incomeForm" class="inline-form">
-                <input
-                  id="incomeAmount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  aria-label="Income amount"
-                />
+                <label class="field field--wide" for="incomeAmount">
+                  <span class="field-label">Income Amount</span>
+                  <input
+                    id="incomeAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    aria-label="Income amount"
+                  />
+                </label>
                 <button type="submit">Save</button>
                 <button type="button" class="icon-button" id="incomeDictate" aria-label="Dictate income">
                   🎙️
@@ -189,9 +201,15 @@
                 <a class="action-link" href="/templates/income-template.csv" download>Download Income Template</a>
               </div>
               <form id="importForm" class="backup-form">
-                <input id="importExpenses" type="file" accept=".csv" />
+                <label class="field field--wide" for="importExpenses">
+                  <span class="field-label">Expenses CSV File</span>
+                  <input id="importExpenses" type="file" accept=".csv" />
+                </label>
                 <button type="button" id="importExpensesBtn">Import Expenses CSV</button>
-                <input id="importIncome" type="file" accept=".csv" />
+                <label class="field field--wide" for="importIncome">
+                  <span class="field-label">Income CSV File</span>
+                  <input id="importIncome" type="file" accept=".csv" />
+                </label>
                 <button type="button" id="importIncomeBtn">Import Income CSV</button>
               </form>
             </section>
@@ -203,30 +221,42 @@
                 or restore from a Google Sheet you own.
               </p>
               <form id="backupForm" class="backup-form">
-                <input
-                  id="googleClientId"
-                  type="text"
-                  placeholder="Google OAuth Client ID"
-                  autocomplete="off"
-                />
-                <input
-                  id="spreadsheetId"
-                  type="text"
-                  placeholder="Spreadsheet ID"
-                  autocomplete="off"
-                />
-                <input
-                  id="expensesSheet"
-                  type="text"
-                  placeholder="Expenses sheet name (default: Expenses)"
-                  autocomplete="off"
-                />
-                <input
-                  id="incomeSheet"
-                  type="text"
-                  placeholder="Income sheet name (default: Income)"
-                  autocomplete="off"
-                />
+                <label class="field field--wide" for="googleClientId">
+                  <span class="field-label">Google OAuth Client ID</span>
+                  <input
+                    id="googleClientId"
+                    type="text"
+                    placeholder="Google OAuth Client ID"
+                    autocomplete="off"
+                  />
+                </label>
+                <label class="field field--wide" for="spreadsheetId">
+                  <span class="field-label">Spreadsheet ID</span>
+                  <input
+                    id="spreadsheetId"
+                    type="text"
+                    placeholder="Spreadsheet ID"
+                    autocomplete="off"
+                  />
+                </label>
+                <label class="field field--wide" for="expensesSheet">
+                  <span class="field-label">Expenses Sheet Name</span>
+                  <input
+                    id="expensesSheet"
+                    type="text"
+                    placeholder="Expenses sheet name (default: Expenses)"
+                    autocomplete="off"
+                  />
+                </label>
+                <label class="field field--wide" for="incomeSheet">
+                  <span class="field-label">Income Sheet Name</span>
+                  <input
+                    id="incomeSheet"
+                    type="text"
+                    placeholder="Income sheet name (default: Income)"
+                    autocomplete="off"
+                  />
+                </label>
                 <label class="checkbox">
                   <input id="autoBackup" type="checkbox" />
                   Auto-backup on changes

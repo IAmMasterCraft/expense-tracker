@@ -337,16 +337,37 @@ button:hover {
   flex-wrap: wrap;
 }
 
-.expense-form input[type="text"] {
-  flex: 1 1 200px;
+.field {
+  display: grid;
+  gap: 6px;
 }
 
-.expense-form input[type="number"] {
-  width: 140px;
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
 }
 
-.backup-form input {
+.field--wide {
   flex: 1 1 220px;
+}
+
+.field--amount {
+  flex: 0 0 140px;
+}
+
+.field input,
+.field select {
+  width: 100%;
+}
+
+.expense-form .checkbox {
+  margin-top: 28px;
+}
+
+.inline-form .field--wide {
+  min-width: 180px;
 }
 
 .backup-actions {
@@ -463,6 +484,9 @@ th {
     flex-direction: column;
   }
 
+  .expense-form .field,
+  .backup-form .field,
+  .inline-form .field,
   .expense-form input,
   .expense-form select,
   .expense-form button,
@@ -470,6 +494,10 @@ th {
   .backup-actions button,
   .action-link {
     width: 100%;
+  }
+
+  .expense-form .checkbox {
+    margin-top: 0;
   }
 }
 
