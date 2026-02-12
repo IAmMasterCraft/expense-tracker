@@ -1115,25 +1115,28 @@ function nextGuidedStep() {
     const transcript = alternatives[0] || '';
     const parsed = step.parse(transcript, alternatives);
     if (parsed.ok) {
-      step.apply(parsed.value);
+      guidedSession.stepRetries[guidedSession.stepIndex] = 0;
+      await Promise.resolve(step.apply(parsed.value));
       guidedSession.stepIndex += 1;
-      if (step.afterApply) await step.afterApply();
+      if (step.afterApply) await Promise.resolve(step.afterApply());
       nextGuidedStep();
       return;
     }
 
-    guidedSession.attempts += 1;
+    const retryCount = (guidedSession.stepRetries[guidedSession.stepIndex] || 0) + 1;
+    guidedSession.stepRetries[guidedSession.stepIndex] = retryCount;
     updateDictationStatus(statusEl, parsed.message || 'I did not catch that. Please try again.', true);
     if (parsed.suggestions?.length) {
-      renderSuggestions(suggestionsEl, parsed.suggestions, (choice) => {
-        step.apply(choice);
+      renderSuggestions(suggestionsEl, parsed.suggestions, async (choice) => {
+        guidedSession.stepRetries[guidedSession.stepIndex] = 0;
+        await Promise.resolve(step.apply(choice));
         guidedSession.stepIndex += 1;
-        if (step.afterApply) step.afterApply();
+        if (step.afterApply) await Promise.resolve(step.afterApply());
         nextGuidedStep();
       });
     }
 
-    if (guidedSession.attempts < guidedSession.maxAttempts) {
+    if (retryCount <= guidedSession.maxRetriesPerStep) {
       nextGuidedStep();
     } else {
       updateDictationStatus(statusEl, 'Let’s try again later or use manual entry.', true);
@@ -1156,8 +1159,8 @@ function nextGuidedStep() {
 function startGuidedIncome() {
   guidedSession = {
     stepIndex: 0,
-    attempts: 0,
-    maxAttempts: 2,
+    stepRetries: {},
+    maxRetriesPerStep: 2,
     statusEl: incomeDictationStatus,
     suggestionsEl: incomeSuggestions,
     steps: [
@@ -1191,8 +1194,8 @@ function startGuidedIncome() {
 function startGuidedExpense() {
   guidedSession = {
     stepIndex: 0,
-    attempts: 0,
-    maxAttempts: 2,
+    stepRetries: {},
+    maxRetriesPerStep: 2,
     statusEl: expenseDictationStatus,
     suggestionsEl: expenseSuggestions,
     steps: [
