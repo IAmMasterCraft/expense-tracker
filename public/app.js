@@ -49,6 +49,7 @@ const analysisNote = document.getElementById('analysisNote');
 const analysisScopeMonthBtn = document.getElementById('analysisScopeMonthBtn');
 const analysisScopeYearBtn = document.getElementById('analysisScopeYearBtn');
 const analysisChart = document.getElementById('analysisChart');
+const analysisPieChart = document.getElementById('analysisPieChart');
 const backupForm = document.getElementById('backupForm');
 const googleClientId = document.getElementById('googleClientId');
 const spreadsheetId = document.getElementById('spreadsheetId');
@@ -643,6 +644,74 @@ function drawMonthChart(monthIncomeTotal, monthExpenseTotal) {
   });
 }
 
+function drawCategoryPieChart(byCategoryMap) {
+  if (!analysisPieChart) return;
+  const rect = analysisPieChart.getBoundingClientRect();
+  const width = Math.max(300, Math.floor(rect.width || analysisPieChart.clientWidth || 320));
+  const height = Math.max(220, Math.floor(rect.height || analysisPieChart.clientHeight || 260));
+  const dpr = window.devicePixelRatio || 1;
+
+  analysisPieChart.width = Math.floor(width * dpr);
+  analysisPieChart.height = Math.floor(height * dpr);
+
+  const ctx = analysisPieChart.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const rows = CATEGORIES.map((category) => ({
+    category,
+    amount: Number(byCategoryMap.get(category)?.amount || 0),
+  })).filter((row) => row.amount > 0);
+
+  const total = rows.reduce((sum, row) => sum + row.amount, 0);
+  if (total <= 0) {
+    ctx.fillStyle = '#6f655d';
+    ctx.font = '13px "Spline Sans", sans-serif';
+    ctx.fillText('No expense data for category pie chart.', 16, 24);
+    return;
+  }
+
+  const colors = ['#b6572f', '#1f8f52', '#7c3b1d', '#d28d5e', '#8a6f5d', '#d15f4a', '#5c7a4e'];
+  const cx = Math.min(width * 0.34, 130);
+  const cy = height * 0.5;
+  const radius = Math.min(82, Math.min(width, height) * 0.28);
+  let start = -Math.PI / 2;
+
+  rows.forEach((row, index) => {
+    const slice = (row.amount / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, start, start + slice);
+    ctx.closePath();
+    ctx.fillStyle = colors[index % colors.length];
+    ctx.fill();
+    start += slice;
+  });
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.52, 0, Math.PI * 2);
+  ctx.fillStyle = '#fffaf4';
+  ctx.fill();
+
+  ctx.fillStyle = '#6f655d';
+  ctx.font = '12px "Spline Sans", sans-serif';
+  ctx.fillText('Category Spend', cx - 40, cy + 4);
+
+  const legendX = cx + radius + 24;
+  let legendY = 28;
+  rows.slice(0, 6).forEach((row, index) => {
+    const color = colors[index % colors.length];
+    const pct = Math.round((row.amount / total) * 100);
+    ctx.fillStyle = color;
+    ctx.fillRect(legendX, legendY - 8, 10, 10);
+    ctx.fillStyle = '#6f655d';
+    ctx.font = '11px "Spline Sans", sans-serif';
+    ctx.fillText(`${row.category} ${pct}%`, legendX + 16, legendY);
+    legendY += 20;
+  });
+}
+
 function renderAnalysisByScope() {
   if (!analysisData) return;
   const isMonth = analysisScope === 'month';
@@ -650,8 +719,9 @@ function renderAnalysisByScope() {
   analysisScopeYearBtn?.classList.toggle('active', !isMonth);
 
   if (isMonth) {
-    renderCategoryCards(analysisData.byCategoryMonth);
     drawMonthChart(analysisData.monthIncomeTotal, analysisData.monthExpenseTotal);
+    drawCategoryPieChart(analysisData.byCategoryMonth);
+    renderCategoryCards(analysisData.byCategoryMonth);
     analysisNote.textContent =
       `${MONTHS[currentMonth - 1]}: Income ${formatCurrency(analysisData.monthIncomeTotal)}, ` +
       `Expense ${formatCurrency(analysisData.monthExpenseTotal)}, ` +
@@ -659,8 +729,9 @@ function renderAnalysisByScope() {
     return;
   }
 
-  renderCategoryCards(analysisData.byCategoryYear);
   drawYearChart(analysisData.monthlyRows);
+  drawCategoryPieChart(analysisData.byCategoryYear);
+  renderCategoryCards(analysisData.byCategoryYear);
   analysisNote.textContent = `Unaccounted expenses: ${formatCurrency(analysisData.unaccounted)}`;
 }
 
