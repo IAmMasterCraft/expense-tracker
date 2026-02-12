@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Expense Whisper Logo Mark</title>
+  <desc id="desc">Rounded emblem with cup and chart motif in warm tones.</desc>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="52" x2="448" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F3C7A0"/>
+      <stop offset="1" stop-color="#B6572F"/>
+    </linearGradient>
+    <linearGradient id="steam" x1="210" y1="120" x2="300" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF2E5"/>
+      <stop offset="1" stop-color="#FAD7BC"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="24" y="24" width="464" height="464" rx="128" fill="url(#bg)"/>
+
+  <path d="M188 146c18-22 52-24 72 0 18-23 52-23 70 0" fill="none" stroke="url(#steam)" stroke-linecap="round" stroke-width="18"/>
+
+  <path d="M128 224h224c0 74-50 132-112 132s-112-58-112-132z" fill="#FFF8F1"/>
+  <path d="M332 238h26c22 0 40 18 40 40s-18 40-40 40h-26" fill="none" stroke="#FFF8F1" stroke-width="20" stroke-linecap="round"/>
+
+  <path d="M168 300l40-36 28 22 44-52 52 52" fill="none" stroke="#B6572F" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+  <circle cx="168" cy="300" r="9" fill="#B6572F"/>
+  <circle cx="208" cy="264" r="9" fill="#B6572F"/>
+  <circle cx="236" cy="286" r="9" fill="#B6572F"/>
+  <circle cx="280" cy="234" r="9" fill="#B6572F"/>
+  <circle cx="332" cy="286" r="9" fill="#B6572F"/>
+</svg>

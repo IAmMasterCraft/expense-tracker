@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="220" viewBox="0 0 860 220" role="img" aria-labelledby="title desc">
+  <title id="title">Expense Whisper Logo Lockup</title>
+  <desc id="desc">Logo mark and wordmark combined in a horizontal lockup.</desc>
+  <rect x="0" y="0" width="860" height="220" rx="36" fill="#FFF9F3"/>
+
+  <g transform="translate(22 22)">
+    <rect x="0" y="0" width="176" height="176" rx="48" fill="#B6572F"/>
+    <path d="M56 74h84c0 36-19 64-42 64s-42-28-42-64z" fill="#FFF8F1"/>
+    <path d="M126 82h10c12 0 22 10 22 22s-10 22-22 22h-10" fill="none" stroke="#FFF8F1" stroke-width="10" stroke-linecap="round"/>
+    <path d="M72 120l13-12 10 8 14-18 18 18" fill="none" stroke="#B6572F" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+    <path d="M72 48c7-8 19-9 26 0 7-9 19-9 26 0" fill="none" stroke="#F4D3BC" stroke-linecap="round" stroke-width="7"/>
+  </g>
+
+  <text x="240" y="96" fill="#7C3B1D" font-family="Fraunces, Georgia, serif" font-size="72" font-weight="700">Expense</text>
+  <text x="242" y="157" fill="#B6572F" font-family="Fraunces, Georgia, serif" font-size="64" font-weight="500">Whisper</text>
+</svg>
