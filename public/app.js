@@ -1939,6 +1939,7 @@ function initTabs() {
   const panels = Array.from(document.querySelectorAll('.tab-panel'));
   const page = document.querySelector('.page');
   const tabOrder = tabs.map((tab) => tab.dataset.tab).filter(Boolean);
+  const interactiveSelector = 'input, textarea, select, button, a, label';
 
   const setActiveTab = (target) => {
     tabs.forEach((btn) => btn.classList.remove('active'));
@@ -1952,6 +1953,20 @@ function initTabs() {
     if (page) page.scrollTop = 0;
   };
   setActiveTabFn = setActiveTab;
+  const switchTabByDelta = (deltaX, deltaY = 0) => {
+    if (Math.abs(deltaX) < 60) return false;
+    if (Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return false;
+
+    const activeTab = tabs.find((tab) => tab.classList.contains('active'));
+    const activeIndex = tabOrder.indexOf(activeTab?.dataset.tab);
+    if (activeIndex < 0) return false;
+
+    const nextIndex = deltaX < 0 ? activeIndex + 1 : activeIndex - 1;
+    if (nextIndex < 0 || nextIndex >= tabOrder.length) return false;
+
+    setActiveTab(tabOrder[nextIndex]);
+    return true;
+  };
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -1959,13 +1974,12 @@ function initTabs() {
     });
   });
 
-  if (!page || !window.matchMedia('(pointer: coarse)').matches) return;
+  if (!page) return;
 
   let startX = 0;
   let startY = 0;
   let tracking = false;
   let startedOnInteractive = false;
-  const interactiveSelector = 'input, textarea, select, button, a, label';
 
   page.addEventListener(
     'touchstart',
@@ -1992,18 +2006,7 @@ function initTabs() {
       const deltaX = touch.clientX - startX;
       const deltaY = touch.clientY - startY;
       tracking = false;
-
-      if (Math.abs(deltaX) < 60) return;
-      if (Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
-
-      const activeTab = tabs.find((tab) => tab.classList.contains('active'));
-      const activeIndex = tabOrder.indexOf(activeTab?.dataset.tab);
-      if (activeIndex < 0) return;
-
-      const nextIndex = deltaX < 0 ? activeIndex + 1 : activeIndex - 1;
-      if (nextIndex < 0 || nextIndex >= tabOrder.length) return;
-
-      setActiveTab(tabOrder[nextIndex]);
+      switchTabByDelta(deltaX, deltaY);
     },
     { passive: true }
   );
@@ -2036,22 +2039,56 @@ function initTabs() {
 
     const deltaX = event.clientX - mouseStartX;
     const deltaY = event.clientY - mouseStartY;
-    if (Math.abs(deltaX) < 60) return;
-    if (Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
-
-    const activeTab = tabs.find((tab) => tab.classList.contains('active'));
-    const activeIndex = tabOrder.indexOf(activeTab?.dataset.tab);
-    if (activeIndex < 0) return;
-
-    const nextIndex = deltaX < 0 ? activeIndex + 1 : activeIndex - 1;
-    if (nextIndex < 0 || nextIndex >= tabOrder.length) return;
-
-    setActiveTab(tabOrder[nextIndex]);
+    switchTabByDelta(deltaX, deltaY);
   });
 
   page.addEventListener('mouseleave', () => {
     mouseDown = false;
   });
+
+  let wheelAccumX = 0;
+  let lastWheelTs = 0;
+  let lastSwitchTs = 0;
+  const WHEEL_IDLE_RESET_MS = 140;
+  const WHEEL_SWITCH_COOLDOWN_MS = 260;
+  const WHEEL_THRESHOLD = 70;
+
+  page.addEventListener(
+    'wheel',
+    (event) => {
+      if (event.target.closest(interactiveSelector)) return;
+
+      const now = Date.now();
+      if (now - lastWheelTs > WHEEL_IDLE_RESET_MS) {
+        wheelAccumX = 0;
+      }
+      lastWheelTs = now;
+
+      let horizontalDelta = event.deltaX;
+      const verticalMagnitude = Math.abs(event.deltaY);
+
+      // Some devices map shift + wheel as horizontal scrolling.
+      if (Math.abs(horizontalDelta) < 1 && event.shiftKey && verticalMagnitude > 0) {
+        horizontalDelta = event.deltaY;
+      }
+
+      const horizontalMagnitude = Math.abs(horizontalDelta);
+      if (horizontalMagnitude < 3) return;
+      if (horizontalMagnitude < verticalMagnitude * 1.2) return;
+      if (now - lastSwitchTs < WHEEL_SWITCH_COOLDOWN_MS) return;
+
+      wheelAccumX += horizontalDelta;
+      if (Math.abs(wheelAccumX) < WHEEL_THRESHOLD) return;
+
+      const didSwitch = switchTabByDelta(wheelAccumX, event.deltaY);
+      wheelAccumX = 0;
+      if (!didSwitch) return;
+
+      lastSwitchTs = now;
+      event.preventDefault();
+    },
+    { passive: false }
+  );
 }
 
 function getTourSteps() {
