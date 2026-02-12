@@ -565,7 +565,8 @@ th {
 
 .splash-photo {
   min-height: 220px;
-  background-image: url("https://images.unsplash.com/photo-1461988320302-91e94c4795b8?auto=format&fit=crop&w=1200&q=80");
+  background-color: #e5b18d;
+  background-image: url("/brand/splash-photo.svg");
   background-size: cover;
   background-position: center;
 }
