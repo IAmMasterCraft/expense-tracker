@@ -1636,6 +1636,7 @@ function initTabs() {
     panels.forEach((panel) => {
       if (panel.dataset.tabPanel === target) panel.classList.add('active');
     });
+    if (page) page.scrollTop = 0;
   };
 
   tabs.forEach((tab) => {
