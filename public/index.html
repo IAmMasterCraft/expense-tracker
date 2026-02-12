@@ -154,19 +154,14 @@
               <div class="media-panel media-panel--analysis" role="img" aria-label="Minimal notebook flat lay"></div>
             </section>
             <section class="card">
-              <h2>Year Analysis</h2>
+              <h2>Analysis</h2>
               <div class="analysis-switch" role="tablist" aria-label="Analysis mode">
-                <button type="button" class="analysis-mode active" id="analysisMonthBtn" data-analysis-mode="month">Month Analysis</button>
-                <button type="button" class="analysis-mode" id="analysisChartBtn" data-analysis-mode="chart">Chart Analysis</button>
+                <button type="button" class="analysis-mode active" id="analysisScopeMonthBtn" data-analysis-scope="month">Month Analysis</button>
+                <button type="button" class="analysis-mode" id="analysisScopeYearBtn" data-analysis-scope="year">Year Analysis</button>
               </div>
-              <div class="analysis-view active" id="analysisMonthView">
-                <div class="analysis-list" id="analysisList"></div>
-                <div class="analysis-list" id="monthlyAnalysisList"></div>
-              </div>
-              <div class="analysis-view" id="analysisChartView">
-                <div class="chart-wrap">
-                  <canvas id="analysisChart" aria-label="Monthly income and expense chart" role="img"></canvas>
-                </div>
+              <div class="analysis-list" id="analysisList"></div>
+              <div class="chart-wrap">
+                <canvas id="analysisChart" aria-label="Analysis chart" role="img"></canvas>
               </div>
               <p class="hint" id="analysisNote"></p>
             </section>

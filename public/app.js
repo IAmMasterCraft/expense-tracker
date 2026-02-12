@@ -45,12 +45,9 @@ const yearExpense = document.getElementById('yearExpense');
 const yearBalance = document.getElementById('yearBalance');
 const analysisTable = document.getElementById('analysisTable');
 const analysisList = document.getElementById('analysisList');
-const monthlyAnalysisList = document.getElementById('monthlyAnalysisList');
 const analysisNote = document.getElementById('analysisNote');
-const analysisMonthBtn = document.getElementById('analysisMonthBtn');
-const analysisChartBtn = document.getElementById('analysisChartBtn');
-const analysisMonthView = document.getElementById('analysisMonthView');
-const analysisChartView = document.getElementById('analysisChartView');
+const analysisScopeMonthBtn = document.getElementById('analysisScopeMonthBtn');
+const analysisScopeYearBtn = document.getElementById('analysisScopeYearBtn');
 const analysisChart = document.getElementById('analysisChart');
 const backupForm = document.getElementById('backupForm');
 const googleClientId = document.getElementById('googleClientId');
@@ -89,7 +86,8 @@ let activeRecognition = null;
 let guidedSession = null;
 let lastToastMessage = '';
 let lastToastAt = 0;
-let analysisMode = 'month';
+let analysisScope = 'month';
+let analysisData = null;
 let currentCurrency = 'USD';
 
 function formatCurrency(value) {
@@ -465,10 +463,55 @@ async function loadYearSummary() {
 
   if (analysisTable) analysisTable.innerHTML = '';
   if (analysisList) analysisList.innerHTML = '';
-  if (monthlyAnalysisList) monthlyAnalysisList.innerHTML = '';
+
+  const incomeByMonth = new Map(incomes.map((row) => [row.month, Number(row.amount || 0)]));
+  const expenseByMonth = new Map();
+  expenses.forEach((row) => {
+    const month = Number(row.month);
+    expenseByMonth.set(month, (expenseByMonth.get(month) || 0) + Number(row.amount || 0));
+  });
+
+  const monthlyRows = MONTHS.map((label, index) => {
+    const month = index + 1;
+    const income = incomeByMonth.get(month) || 0;
+    const expense = expenseByMonth.get(month) || 0;
+    return { month, label, income, expense, balance: income - expense };
+  });
+
+  const monthExpenses = expenses.filter((row) => Number(row.month) === currentMonth);
+  const monthByCategory = new Map();
   CATEGORIES.forEach((category) => {
-    const entry = byCategory.get(category);
-    if (!analysisList) return;
+    monthByCategory.set(category, { amount: 0, count: 0 });
+  });
+
+  monthExpenses.forEach((row) => {
+    const entry = monthByCategory.get(row.category);
+    if (entry) {
+      entry.amount += Number(row.amount || 0);
+      entry.count += 1;
+    }
+  });
+
+  const monthIncomeTotal = incomeByMonth.get(currentMonth) || 0;
+  const monthExpenseTotal = expenseByMonth.get(currentMonth) || 0;
+
+  analysisData = {
+    byCategoryYear: byCategory,
+    byCategoryMonth: monthByCategory,
+    monthlyRows,
+    monthIncomeTotal,
+    monthExpenseTotal,
+    unaccounted,
+  };
+
+  renderAnalysisByScope();
+}
+
+function renderCategoryCards(byCategoryMap) {
+  if (!analysisList) return;
+  analysisList.innerHTML = '';
+  CATEGORIES.forEach((category) => {
+    const entry = byCategoryMap.get(category) || { amount: 0, count: 0 };
     const card = document.createElement('div');
     card.className = 'analysis-item';
     const header = document.createElement('div');
@@ -490,65 +533,9 @@ async function loadYearSummary() {
     card.appendChild(meta);
     analysisList.appendChild(card);
   });
-
-  const incomeByMonth = new Map(incomes.map((row) => [row.month, Number(row.amount || 0)]));
-  const expenseByMonth = new Map();
-  expenses.forEach((row) => {
-    const month = Number(row.month);
-    expenseByMonth.set(month, (expenseByMonth.get(month) || 0) + Number(row.amount || 0));
-  });
-
-  const monthlyRows = MONTHS.map((label, index) => {
-    const month = index + 1;
-    const income = incomeByMonth.get(month) || 0;
-    const expense = expenseByMonth.get(month) || 0;
-    return { month, label, income, expense, balance: income - expense };
-  });
-
-  monthlyRows.forEach((row) => {
-    if (!monthlyAnalysisList) return;
-    const card = document.createElement('div');
-    card.className = 'analysis-item';
-
-    const header = document.createElement('div');
-    header.className = 'analysis-item-header';
-    const month = document.createElement('span');
-    month.textContent = row.label;
-    const balance = document.createElement('span');
-    balance.textContent = formatCurrency(row.balance);
-    header.appendChild(month);
-    header.appendChild(balance);
-
-    const meta = document.createElement('div');
-    meta.className = 'analysis-item-meta';
-    const income = document.createElement('span');
-    income.textContent = `Income ${formatCurrency(row.income)}`;
-    const expense = document.createElement('span');
-    expense.textContent = `Expense ${formatCurrency(row.expense)}`;
-    meta.appendChild(income);
-    meta.appendChild(expense);
-
-    card.appendChild(header);
-    card.appendChild(meta);
-    monthlyAnalysisList.appendChild(card);
-  });
-
-  drawMonthlyChart(monthlyRows);
-  applyAnalysisMode();
-
-  analysisNote.textContent = `Unaccounted expenses: ${formatCurrency(unaccounted)}`;
 }
 
-function applyAnalysisMode() {
-  if (!analysisMonthBtn || !analysisChartBtn || !analysisMonthView || !analysisChartView) return;
-  const isMonth = analysisMode === 'month';
-  analysisMonthBtn.classList.toggle('active', isMonth);
-  analysisChartBtn.classList.toggle('active', !isMonth);
-  analysisMonthView.classList.toggle('active', isMonth);
-  analysisChartView.classList.toggle('active', !isMonth);
-}
-
-function drawMonthlyChart(rows) {
+function drawYearChart(rows) {
   if (!analysisChart) return;
   const rect = analysisChart.getBoundingClientRect();
   const width = Math.max(300, Math.floor(rect.width || analysisChart.clientWidth || 320));
@@ -615,6 +602,66 @@ function drawMonthlyChart(rows) {
   ctx.fillRect(padLeft + 68, 6, 10, 10);
   ctx.fillStyle = '#6f655d';
   ctx.fillText('Expense', padLeft + 82, 15);
+}
+
+function drawMonthChart(monthIncomeTotal, monthExpenseTotal) {
+  if (!analysisChart) return;
+  const rect = analysisChart.getBoundingClientRect();
+  const width = Math.max(300, Math.floor(rect.width || analysisChart.clientWidth || 320));
+  const height = Math.max(220, Math.floor(rect.height || analysisChart.clientHeight || 260));
+  const dpr = window.devicePixelRatio || 1;
+
+  analysisChart.width = Math.floor(width * dpr);
+  analysisChart.height = Math.floor(height * dpr);
+
+  const ctx = analysisChart.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const values = [
+    { label: 'Income', value: monthIncomeTotal, color: '#1f8f52' },
+    { label: 'Expense', value: monthExpenseTotal, color: '#b6572f' },
+  ];
+  const maxValue = Math.max(1, ...values.map((v) => v.value));
+  const barWidth = 58;
+  const gap = 56;
+  const totalWidth = values.length * barWidth + (values.length - 1) * gap;
+  const startX = (width - totalWidth) / 2;
+  const maxBarHeight = height - 90;
+
+  values.forEach((entry, index) => {
+    const x = startX + index * (barWidth + gap);
+    const h = (entry.value / maxValue) * maxBarHeight;
+    const y = height - 48 - h;
+    ctx.fillStyle = entry.color;
+    ctx.fillRect(x, y, barWidth, h);
+    ctx.fillStyle = '#6f655d';
+    ctx.font = '12px "Spline Sans", sans-serif';
+    ctx.fillText(entry.label, x, height - 24);
+    ctx.fillText(formatCurrency(entry.value), x - 8, y - 8);
+  });
+}
+
+function renderAnalysisByScope() {
+  if (!analysisData) return;
+  const isMonth = analysisScope === 'month';
+  analysisScopeMonthBtn?.classList.toggle('active', isMonth);
+  analysisScopeYearBtn?.classList.toggle('active', !isMonth);
+
+  if (isMonth) {
+    renderCategoryCards(analysisData.byCategoryMonth);
+    drawMonthChart(analysisData.monthIncomeTotal, analysisData.monthExpenseTotal);
+    analysisNote.textContent =
+      `${MONTHS[currentMonth - 1]}: Income ${formatCurrency(analysisData.monthIncomeTotal)}, ` +
+      `Expense ${formatCurrency(analysisData.monthExpenseTotal)}, ` +
+      `Balance ${formatCurrency(analysisData.monthIncomeTotal - analysisData.monthExpenseTotal)}.`;
+    return;
+  }
+
+  renderCategoryCards(analysisData.byCategoryYear);
+  drawYearChart(analysisData.monthlyRows);
+  analysisNote.textContent = `Unaccounted expenses: ${formatCurrency(analysisData.unaccounted)}`;
 }
 
 function updateBalance() {
@@ -1881,16 +1928,16 @@ function initTabs() {
 }
 
 function initAnalysisSwitch() {
-  if (!analysisMonthBtn || !analysisChartBtn) return;
-  analysisMonthBtn.addEventListener('click', () => {
-    analysisMode = 'month';
-    applyAnalysisMode();
+  if (!analysisScopeMonthBtn || !analysisScopeYearBtn) return;
+  analysisScopeMonthBtn.addEventListener('click', () => {
+    analysisScope = 'month';
+    renderAnalysisByScope();
   });
-  analysisChartBtn.addEventListener('click', () => {
-    analysisMode = 'chart';
-    applyAnalysisMode();
+  analysisScopeYearBtn.addEventListener('click', () => {
+    analysisScope = 'year';
+    renderAnalysisByScope();
   });
-  applyAnalysisMode();
+  renderAnalysisByScope();
 }
 
 function setDailyPrompt() {

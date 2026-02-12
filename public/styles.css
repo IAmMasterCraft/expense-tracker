@@ -539,14 +539,6 @@ th {
   border-color: transparent;
 }
 
-.analysis-view {
-  display: none;
-}
-
-.analysis-view.active {
-  display: block;
-}
-
 .chart-wrap {
   border: 1px solid rgba(180, 160, 140, 0.35);
   border-radius: 16px;
