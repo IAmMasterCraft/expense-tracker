@@ -154,7 +154,19 @@
             </section>
             <section class="card">
               <h2>Year Analysis</h2>
-              <div class="analysis-list" id="analysisList"></div>
+              <div class="analysis-switch" role="tablist" aria-label="Analysis mode">
+                <button type="button" class="analysis-mode active" id="analysisMonthBtn" data-analysis-mode="month">Month Analysis</button>
+                <button type="button" class="analysis-mode" id="analysisChartBtn" data-analysis-mode="chart">Chart Analysis</button>
+              </div>
+              <div class="analysis-view active" id="analysisMonthView">
+                <div class="analysis-list" id="analysisList"></div>
+                <div class="analysis-list" id="monthlyAnalysisList"></div>
+              </div>
+              <div class="analysis-view" id="analysisChartView">
+                <div class="chart-wrap">
+                  <canvas id="analysisChart" aria-label="Monthly income and expense chart" role="img"></canvas>
+                </div>
+              </div>
               <p class="hint" id="analysisNote"></p>
             </section>
           </section>

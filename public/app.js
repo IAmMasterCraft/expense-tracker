@@ -44,7 +44,13 @@ const yearExpense = document.getElementById('yearExpense');
 const yearBalance = document.getElementById('yearBalance');
 const analysisTable = document.getElementById('analysisTable');
 const analysisList = document.getElementById('analysisList');
+const monthlyAnalysisList = document.getElementById('monthlyAnalysisList');
 const analysisNote = document.getElementById('analysisNote');
+const analysisMonthBtn = document.getElementById('analysisMonthBtn');
+const analysisChartBtn = document.getElementById('analysisChartBtn');
+const analysisMonthView = document.getElementById('analysisMonthView');
+const analysisChartView = document.getElementById('analysisChartView');
+const analysisChart = document.getElementById('analysisChart');
 const backupForm = document.getElementById('backupForm');
 const googleClientId = document.getElementById('googleClientId');
 const spreadsheetId = document.getElementById('spreadsheetId');
@@ -82,6 +88,7 @@ let activeRecognition = null;
 let guidedSession = null;
 let lastToastMessage = '';
 let lastToastAt = 0;
+let analysisMode = 'month';
 
 function formatCurrency(value) {
   const number = Number(value || 0);
@@ -423,6 +430,7 @@ async function loadYearSummary() {
 
   if (analysisTable) analysisTable.innerHTML = '';
   if (analysisList) analysisList.innerHTML = '';
+  if (monthlyAnalysisList) monthlyAnalysisList.innerHTML = '';
   CATEGORIES.forEach((category) => {
     const entry = byCategory.get(category);
     if (!analysisList) return;
@@ -448,7 +456,130 @@ async function loadYearSummary() {
     analysisList.appendChild(card);
   });
 
+  const incomeByMonth = new Map(incomes.map((row) => [row.month, Number(row.amount || 0)]));
+  const expenseByMonth = new Map();
+  expenses.forEach((row) => {
+    const month = Number(row.month);
+    expenseByMonth.set(month, (expenseByMonth.get(month) || 0) + Number(row.amount || 0));
+  });
+
+  const monthlyRows = MONTHS.map((label, index) => {
+    const month = index + 1;
+    const income = incomeByMonth.get(month) || 0;
+    const expense = expenseByMonth.get(month) || 0;
+    return { month, label, income, expense, balance: income - expense };
+  });
+
+  monthlyRows.forEach((row) => {
+    if (!monthlyAnalysisList) return;
+    const card = document.createElement('div');
+    card.className = 'analysis-item';
+
+    const header = document.createElement('div');
+    header.className = 'analysis-item-header';
+    const month = document.createElement('span');
+    month.textContent = row.label;
+    const balance = document.createElement('span');
+    balance.textContent = formatCurrency(row.balance);
+    header.appendChild(month);
+    header.appendChild(balance);
+
+    const meta = document.createElement('div');
+    meta.className = 'analysis-item-meta';
+    const income = document.createElement('span');
+    income.textContent = `Income ${formatCurrency(row.income)}`;
+    const expense = document.createElement('span');
+    expense.textContent = `Expense ${formatCurrency(row.expense)}`;
+    meta.appendChild(income);
+    meta.appendChild(expense);
+
+    card.appendChild(header);
+    card.appendChild(meta);
+    monthlyAnalysisList.appendChild(card);
+  });
+
+  drawMonthlyChart(monthlyRows);
+  applyAnalysisMode();
+
   analysisNote.textContent = `Unaccounted expenses: ${formatCurrency(unaccounted)}`;
+}
+
+function applyAnalysisMode() {
+  if (!analysisMonthBtn || !analysisChartBtn || !analysisMonthView || !analysisChartView) return;
+  const isMonth = analysisMode === 'month';
+  analysisMonthBtn.classList.toggle('active', isMonth);
+  analysisChartBtn.classList.toggle('active', !isMonth);
+  analysisMonthView.classList.toggle('active', isMonth);
+  analysisChartView.classList.toggle('active', !isMonth);
+}
+
+function drawMonthlyChart(rows) {
+  if (!analysisChart) return;
+  const rect = analysisChart.getBoundingClientRect();
+  const width = Math.max(300, Math.floor(rect.width || analysisChart.clientWidth || 320));
+  const height = Math.max(220, Math.floor(rect.height || analysisChart.clientHeight || 260));
+  const dpr = window.devicePixelRatio || 1;
+
+  analysisChart.width = Math.floor(width * dpr);
+  analysisChart.height = Math.floor(height * dpr);
+
+  const ctx = analysisChart.getContext('2d');
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const padTop = 18;
+  const padLeft = 18;
+  const padRight = 12;
+  const padBottom = 34;
+  const plotWidth = width - padLeft - padRight;
+  const plotHeight = height - padTop - padBottom;
+
+  const maxValue = Math.max(
+    1,
+    ...rows.map((row) => Math.max(row.income, row.expense))
+  );
+
+  ctx.strokeStyle = 'rgba(180,160,140,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padLeft, padTop + plotHeight);
+  ctx.lineTo(width - padRight, padTop + plotHeight);
+  ctx.stroke();
+
+  const groupWidth = plotWidth / rows.length;
+  const barWidth = Math.max(4, groupWidth * 0.26);
+
+  rows.forEach((row, index) => {
+    const x0 = padLeft + index * groupWidth + groupWidth * 0.18;
+    const incomeHeight = (row.income / maxValue) * plotHeight;
+    const expenseHeight = (row.expense / maxValue) * plotHeight;
+    const yIncome = padTop + plotHeight - incomeHeight;
+    const yExpense = padTop + plotHeight - expenseHeight;
+
+    ctx.fillStyle = '#1f8f52';
+    ctx.fillRect(x0, yIncome, barWidth, incomeHeight);
+
+    ctx.fillStyle = '#b6572f';
+    ctx.fillRect(x0 + barWidth + 4, yExpense, barWidth, expenseHeight);
+
+    if (index % 2 === 0) {
+      ctx.fillStyle = '#6f655d';
+      ctx.font = '10px "Spline Sans", sans-serif';
+      ctx.fillText(row.label.slice(0, 3), x0 - 1, height - 10);
+    }
+  });
+
+  ctx.fillStyle = '#1f8f52';
+  ctx.fillRect(padLeft, 6, 10, 10);
+  ctx.fillStyle = '#6f655d';
+  ctx.font = '11px "Spline Sans", sans-serif';
+  ctx.fillText('Income', padLeft + 14, 15);
+
+  ctx.fillStyle = '#b6572f';
+  ctx.fillRect(padLeft + 68, 6, 10, 10);
+  ctx.fillStyle = '#6f655d';
+  ctx.fillText('Expense', padLeft + 82, 15);
 }
 
 function updateBalance() {
@@ -1703,6 +1834,19 @@ function initTabs() {
   );
 }
 
+function initAnalysisSwitch() {
+  if (!analysisMonthBtn || !analysisChartBtn) return;
+  analysisMonthBtn.addEventListener('click', () => {
+    analysisMode = 'month';
+    applyAnalysisMode();
+  });
+  analysisChartBtn.addEventListener('click', () => {
+    analysisMode = 'chart';
+    applyAnalysisMode();
+  });
+  applyAnalysisMode();
+}
+
 function setDailyPrompt() {
   if (!dailyPrompt) return;
   const prompts = [
@@ -1732,6 +1876,7 @@ function initSplash() {
 loadSettings()
   .then(() => {
     initTabs();
+    initAnalysisSwitch();
     initSplash();
     setDailyPrompt();
     return refreshAll();
