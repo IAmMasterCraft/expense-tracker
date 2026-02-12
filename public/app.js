@@ -29,13 +29,11 @@ const DB_VERSION = 2;
 const monthSelect = document.getElementById('monthSelect');
 const incomeForm = document.getElementById('incomeForm');
 const incomeAmount = document.getElementById('incomeAmount');
-const incomeStatus = document.getElementById('incomeStatus');
 const expenseForm = document.getElementById('expenseForm');
 const expenseName = document.getElementById('expenseName');
 const expenseAmount = document.getElementById('expenseAmount');
 const expenseCategory = document.getElementById('expenseCategory');
 const expenseCompleted = document.getElementById('expenseCompleted');
-const expenseStatus = document.getElementById('expenseStatus');
 const expenseTable = document.getElementById('expenseTable');
 const expenseList = document.getElementById('expenseList');
 const monthIncome = document.getElementById('monthIncome');
@@ -55,14 +53,12 @@ const incomeSheet = document.getElementById('incomeSheet');
 const connectGoogle = document.getElementById('connectGoogle');
 const restoreGoogle = document.getElementById('restoreGoogle');
 const autoBackup = document.getElementById('autoBackup');
-const backupStatus = document.getElementById('backupStatus');
 const exportExpenses = document.getElementById('exportExpenses');
 const exportIncome = document.getElementById('exportIncome');
 const importExpenses = document.getElementById('importExpenses');
 const importIncome = document.getElementById('importIncome');
 const importExpensesBtn = document.getElementById('importExpensesBtn');
 const importIncomeBtn = document.getElementById('importIncomeBtn');
-const importStatus = document.getElementById('importStatus');
 const incomeDictate = document.getElementById('incomeDictate');
 const expenseDictate = document.getElementById('expenseDictate');
 const incomeDictationStatus = document.getElementById('incomeDictationStatus');
@@ -74,6 +70,7 @@ const expenseSuggestions = document.getElementById('expenseSuggestions');
 const splash = document.getElementById('splash');
 const enterApp = document.getElementById('enterApp');
 const dailyPrompt = document.getElementById('dailyPrompt');
+const toastHost = document.getElementById('toastHost');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
@@ -83,6 +80,8 @@ let googleAccessToken = null;
 let autoBackupTimer;
 let activeRecognition = null;
 let guidedSession = null;
+let lastToastMessage = '';
+let lastToastAt = 0;
 
 function formatCurrency(value) {
   const number = Number(value || 0);
@@ -100,6 +99,25 @@ function setStatus(el, message, isError = false) {
 function clearStatus(el) {
   el.textContent = '';
   el.style.color = '';
+}
+
+function notify(message, type = 'info', ttlMs = 3200) {
+  if (!toastHost || !message) return;
+  const now = Date.now();
+  if (message === lastToastMessage && now - lastToastAt < 1800) return;
+  lastToastMessage = message;
+  lastToastAt = now;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast--${type}`;
+  toast.textContent = message;
+  toastHost.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 200);
+  }, ttlMs);
 }
 
 function buildSelectOptions(select, options) {
@@ -357,18 +375,20 @@ function renderExpenses() {
 async function toggleExpense(id, completed) {
   try {
     await updateExpenseRecord(id, { completed });
+    notify('Expense updated.', 'success');
     await refreshAll();
   } catch (error) {
-    setStatus(expenseStatus, error.message, true);
+    notify(error.message || 'Unable to update expense.', 'error');
   }
 }
 
 async function deleteExpense(id) {
   try {
     await deleteExpenseRecord(id);
+    notify('Expense deleted.', 'success');
     await refreshAll();
   } catch (error) {
-    setStatus(expenseStatus, error.message, true);
+    notify(error.message || 'Unable to delete expense.', 'error');
   }
 }
 
@@ -439,7 +459,6 @@ function updateBalance() {
 }
 
 async function refreshAll() {
-  clearStatus(expenseStatus);
   await loadIncome();
   await loadExpenses();
   updateBalance();
@@ -452,11 +471,11 @@ function sanitizeSheetName(name, fallback) {
 }
 
 function updateBackupStatus(message, isError = false) {
-  setStatus(backupStatus, message, isError);
+  notify(message, isError ? 'error' : 'success');
 }
 
 function updateImportStatus(message, isError = false) {
-  setStatus(importStatus, message, isError);
+  notify(message, isError ? 'error' : 'success');
 }
 
 function updateDictationStatus(el, message, isError = false) {
@@ -721,7 +740,6 @@ function startDictation({ target, button, statusEl }) {
     updateDictationStatus(statusEl, `Heard: "${transcript}"`);
 
     if (target === 'income') {
-      console.log('Parsing income dictation:', transcript);
       const { amount, month } = parseIncomeDictation(transcript);
       if (amount === null || Number.isNaN(amount)) {
         updateDictationStatus(statusEl, 'Could not find an income amount in the dictation.', true);
@@ -976,7 +994,6 @@ async function initGoogleTokenClient() {
 }
 
 async function connectToGoogle() {
-  clearStatus(backupStatus);
   await setSetting('googleClientId', googleClientId.value.trim());
 
   const client = await initGoogleTokenClient();
@@ -1031,8 +1048,6 @@ async function getSheetValues(spreadsheetIdValue, range) {
 }
 
 async function backupToSheets() {
-  clearStatus(backupStatus);
-
   if (!googleAccessToken) {
     updateBackupStatus('Connect Google before backing up.', true);
     return;
@@ -1307,8 +1322,6 @@ async function exportIncomeCsv() {
 }
 
 async function restoreFromSheets() {
-  clearStatus(backupStatus);
-
   if (!googleAccessToken) {
     updateBackupStatus('Connect Google before restoring.', true);
     return;
@@ -1477,26 +1490,25 @@ monthSelect.addEventListener('change', async (event) => {
 
 incomeForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  clearStatus(incomeStatus);
 
   const amount = Number(incomeAmount.value || 0);
   if (Number.isNaN(amount) || amount < 0) {
-    return setStatus(incomeStatus, 'Income must be a positive number.', true);
+    notify('Income must be a positive number.', 'error');
+    return;
   }
 
   try {
     await saveIncome(amount);
-    setStatus(incomeStatus, 'Income saved.');
+    notify('Income saved.', 'success');
     updateBalance();
     await loadYearSummary();
   } catch (error) {
-    setStatus(incomeStatus, error.message, true);
+    notify(error.message || 'Unable to save income.', 'error');
   }
 });
 
 expenseForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  clearStatus(expenseStatus);
 
   const payload = {
     name: expenseName.value.trim(),
@@ -1507,21 +1519,24 @@ expenseForm.addEventListener('submit', async (event) => {
   };
 
   if (!payload.name) {
-    return setStatus(expenseStatus, 'Expense name is required.', true);
+    notify('Expense name is required.', 'error');
+    return;
   }
 
   if (Number.isNaN(payload.amount) || payload.amount < 0) {
-    return setStatus(expenseStatus, 'Expense amount must be positive.', true);
+    notify('Expense amount must be positive.', 'error');
+    return;
   }
 
   try {
     await addExpense(payload);
+    notify('Expense added.', 'success');
     expenseName.value = '';
     expenseAmount.value = '';
     expenseCompleted.checked = false;
     await refreshAll();
   } catch (error) {
-    setStatus(expenseStatus, error.message, true);
+    notify(error.message || 'Unable to add expense.', 'error');
   }
 });
 
@@ -1563,7 +1578,6 @@ exportIncome.addEventListener('click', async () => {
 });
 
 importExpensesBtn.addEventListener('click', async () => {
-  clearStatus(importStatus);
   const file = importExpenses.files?.[0];
   if (!file) return updateImportStatus('Select an expenses CSV file first.', true);
   try {
@@ -1576,7 +1590,6 @@ importExpensesBtn.addEventListener('click', async () => {
 });
 
 importIncomeBtn.addEventListener('click', async () => {
-  clearStatus(importStatus);
   const file = importIncome.files?.[0];
   if (!file) return updateImportStatus('Select an income CSV file first.', true);
   try {
@@ -1661,5 +1674,5 @@ loadSettings()
     return refreshAll();
   })
   .catch((error) => {
-    setStatus(expenseStatus, error.message, true);
+    notify(error.message || 'Unable to initialize app.', 'error');
   });

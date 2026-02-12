@@ -75,7 +75,6 @@
                 </button>
                 <button type="button" class="ghost-button" id="expenseGuided">Guided</button>
               </form>
-              <p class="hint" id="expenseStatus"></p>
               <p class="hint" id="expenseDictationStatus"></p>
               <div class="suggestions" id="expenseSuggestions"></div>
             </section>
@@ -108,7 +107,6 @@
                 </button>
                 <button type="button" class="ghost-button" id="incomeGuided">Guided</button>
               </form>
-              <p class="hint" id="incomeStatus"></p>
               <p class="hint" id="incomeDictationStatus"></p>
               <div class="suggestions" id="incomeSuggestions"></div>
             </section>
@@ -182,7 +180,6 @@
                 <input id="importIncome" type="file" accept=".csv" />
                 <button type="button" id="importIncomeBtn">Import Income CSV</button>
               </form>
-              <p class="hint" id="importStatus"></p>
             </section>
 
             <section class="card">
@@ -226,10 +223,11 @@
                   <button type="submit">Backup Now</button>
                 </div>
               </form>
-              <p class="hint" id="backupStatus"></p>
             </section>
           </section>
         </main>
+
+        <div class="toast-host" id="toastHost" aria-live="polite" aria-atomic="true"></div>
 
         <nav class="tabbar" aria-label="Primary">
           <button type="button" class="tab active" data-tab="expenses">Expenses</button>
