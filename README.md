@@ -45,3 +45,13 @@ A local-first expense tracker inspired by the annual spreadsheet template. Data 
 
 ## Data Storage
 Data is persisted in IndexedDB in the browser.
+
+## TODO
+- Budget goals with threshold alerts (for example: 70%, 90%, 100%)
+- Recurring transactions (weekly/monthly income and expenses)
+- Receipt capture with OCR to auto-fill entries
+- Search and advanced filters (keyword, amount range, category, status, date)
+- Edit history and undo actions
+- Exportable analysis report (PDF/CSV summary with charts)
+- Progressive Web App (PWA) install support and offline shell caching
+- Privacy lock (PIN/biometric)
