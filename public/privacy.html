@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:;"
+    />
+    <title>Privacy Policy · Expense Whisper</title>
+    <link rel="icon" type="image/svg+xml" href="/brand/logo-mark.svg" />
+    <link rel="apple-touch-icon" href="/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell privacy-shell">
+      <article class="device privacy-device">
+        <header class="privacy-topbar">
+          <a class="privacy-back" href="/">Back to App</a>
+          <img class="privacy-logo" src="/brand/logo-lockup.svg" alt="Expense Whisper" />
+        </header>
+
+        <main class="privacy-content" role="main">
+          <section class="card privacy-hero">
+            <p class="eyebrow">Legal</p>
+            <h1>Privacy Policy</h1>
+            <p class="subhead">Effective date: February 20, 2026</p>
+          </section>
+
+          <section class="card">
+            <h2>Summary</h2>
+            <p>
+              Expense Whisper is designed as a local-first app. Your entries are stored on your
+              device in browser IndexedDB. You decide if and when data is backed up to Google
+              Sheets.
+            </p>
+          </section>
+
+          <section class="card">
+            <h2>What Data Is Stored</h2>
+            <ul class="privacy-list">
+              <li>Income values by month</li>
+              <li>Expense records (name, amount, category, status, timestamps)</li>
+              <li>App preferences (selected month, currency, onboarding state)</li>
+              <li>Backup settings (spreadsheet ID, sheet names, auto-backup preference)</li>
+            </ul>
+          </section>
+
+          <section class="card">
+            <h2>How Data Is Used</h2>
+            <p>
+              Data is used only to power budgeting, summaries, charts, CSV import/export, and
+              optional cloud backup workflows in the app.
+            </p>
+          </section>
+
+          <section class="card">
+            <h2>Google Sheets Backup</h2>
+            <p>
+              When you connect Google, OAuth is handled by Google Identity Services. If you choose
+              to back up, selected records are written to the spreadsheet you provide. You can
+              restore from that sheet at any time.
+            </p>
+            <p class="hint">
+              The app does not run a project backend that stores your financial entries.
+            </p>
+          </section>
+
+          <section class="card">
+            <h2>Speech Features</h2>
+            <p>
+              Dictation and guided speech run through browser speech APIs. Spoken input is used to
+              populate fields and is not persisted by the app unless you save the entry.
+            </p>
+          </section>
+
+          <section class="card">
+            <h2>Security Notes</h2>
+            <ul class="privacy-list">
+              <li>Only use the app on trusted devices.</li>
+              <li>Protect your Google account and spreadsheet access.</li>
+              <li>Use CSV exports for independent backups.</li>
+            </ul>
+          </section>
+
+          <section class="card">
+            <h2>Your Controls</h2>
+            <ul class="privacy-list">
+              <li>Delete entries in the app at any time.</li>
+              <li>Disable auto-backup whenever you want.</li>
+              <li>Clear browser site data to remove all local records.</li>
+            </ul>
+          </section>
+
+          <section class="card">
+            <h2>Contact</h2>
+            <p>
+              For policy updates or privacy questions, publish your support contact details in this
+              section before production release.
+            </p>
+          </section>
+        </main>
+      </article>
+    </div>
+  </body>
+</html>

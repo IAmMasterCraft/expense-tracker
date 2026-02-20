@@ -800,3 +800,80 @@ th {
   outline-offset: 3px;
   border-radius: 12px;
 }
+
+.privacy-shell {
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+.privacy-device {
+  width: min(760px, 100%);
+  height: auto;
+  min-height: min(900px, calc(100vh - 48px));
+}
+
+.privacy-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(180, 160, 140, 0.35);
+  background: rgba(255, 253, 249, 0.92);
+}
+
+.privacy-logo {
+  width: min(230px, 56%);
+  height: auto;
+}
+
+.privacy-back {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(182, 87, 47, 0.3);
+  color: var(--accent-dark);
+  background: #fffaf4;
+  text-decoration: none;
+  padding: 8px 14px;
+  box-shadow: 0 8px 14px rgba(20, 12, 8, 0.08);
+}
+
+.privacy-content {
+  padding: 22px;
+  display: grid;
+  gap: 6px;
+}
+
+.privacy-hero {
+  border-color: rgba(182, 87, 47, 0.28);
+  box-shadow: var(--shadow);
+}
+
+.privacy-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink);
+  display: grid;
+  gap: 6px;
+}
+
+.privacy-content p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .privacy-device {
+    border-radius: 28px;
+  }
+
+  .privacy-topbar {
+    flex-wrap: wrap;
+  }
+
+  .privacy-logo {
+    width: 100%;
+    max-width: 240px;
+  }
+}
