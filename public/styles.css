@@ -810,6 +810,8 @@ th {
   width: min(760px, 100%);
   height: auto;
   min-height: min(900px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
 }
 
 .privacy-topbar {
@@ -843,6 +845,15 @@ th {
   padding: 22px;
   display: grid;
   gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.privacy-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .privacy-hero {
