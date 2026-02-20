@@ -874,6 +874,10 @@ th {
   line-height: 1.6;
 }
 
+.privacy-content .card {
+  overflow: visible;
+}
+
 @media (max-width: 720px) {
   .privacy-device {
     border-radius: 28px;
