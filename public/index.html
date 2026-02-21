@@ -299,10 +299,64 @@
                 </div>
               </form>
             </section>
+
+            <section class="card">
+              <h2>Privacy Lock</h2>
+              <p class="hint">
+                Protect local data with a PIN and optional platform biometrics.
+              </p>
+              <form class="backup-form" id="lockForm">
+                <label class="field field--wide" for="lockPinInput">
+                  <span class="field-label">PIN (4-8 digits)</span>
+                  <input
+                    id="lockPinInput"
+                    type="password"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="8"
+                    placeholder="Enter PIN"
+                    autocomplete="new-password"
+                  />
+                </label>
+                <div class="backup-actions">
+                  <button type="button" id="savePinLock">Save PIN</button>
+                  <button type="button" class="ghost-button" id="clearPinLock">Clear Lock</button>
+                </div>
+                <div class="backup-actions">
+                  <button type="button" id="enableBiometric">Enable Biometric</button>
+                  <button type="button" class="ghost-button" id="disableBiometric">Disable Biometric</button>
+                  <button type="button" class="ghost-button" id="lockNow">Lock Now</button>
+                </div>
+                <p class="hint" id="lockStatusHint"></p>
+              </form>
+            </section>
           </section>
         </main>
 
         <div class="toast-host" id="toastHost" aria-live="polite" aria-atomic="true"></div>
+        <div class="lock-overlay hidden" id="lockOverlay" aria-live="polite" aria-modal="true" role="dialog">
+          <div class="lock-card">
+            <p class="eyebrow">Privacy Lock</p>
+            <h2>Unlock Expense Whisper</h2>
+            <p class="hint" id="unlockHint">Enter your PIN to continue.</p>
+            <label class="field field--wide" for="unlockPinInput">
+              <span class="field-label">PIN</span>
+              <input
+                id="unlockPinInput"
+                type="password"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="8"
+                autocomplete="current-password"
+                placeholder="Enter PIN"
+              />
+            </label>
+            <div class="backup-actions lock-actions">
+              <button type="button" id="unlockPinBtn">Unlock</button>
+              <button type="button" class="ghost-button" id="unlockBiometricBtn">Use Biometric</button>
+            </div>
+          </div>
+        </div>
         <div class="tour-overlay hidden" id="tourOverlay" aria-live="polite">
           <div class="tour-card">
             <p class="eyebrow" id="tourStepLabel">Step 1</p>

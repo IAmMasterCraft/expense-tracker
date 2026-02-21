@@ -84,6 +84,19 @@ const tourBody = document.getElementById('tourBody');
 const tourPrev = document.getElementById('tourPrev');
 const tourSkip = document.getElementById('tourSkip');
 const tourNext = document.getElementById('tourNext');
+const lockForm = document.getElementById('lockForm');
+const lockPinInput = document.getElementById('lockPinInput');
+const savePinLock = document.getElementById('savePinLock');
+const clearPinLock = document.getElementById('clearPinLock');
+const enableBiometric = document.getElementById('enableBiometric');
+const disableBiometric = document.getElementById('disableBiometric');
+const lockNow = document.getElementById('lockNow');
+const lockStatusHint = document.getElementById('lockStatusHint');
+const lockOverlay = document.getElementById('lockOverlay');
+const unlockPinInput = document.getElementById('unlockPinInput');
+const unlockPinBtn = document.getElementById('unlockPinBtn');
+const unlockBiometricBtn = document.getElementById('unlockBiometricBtn');
+const unlockHint = document.getElementById('unlockHint');
 
 let currentMonth = new Date().getMonth() + 1;
 let currentExpenses = [];
@@ -102,6 +115,11 @@ let setActiveTabFn = null;
 let hasSeenHelp = false;
 let hasSeenSplash = false;
 let analysisResizeTimer = null;
+let lockPinHash = '';
+let lockBiometricEnabled = false;
+let lockBiometricCredentialId = '';
+let lockEnabled = false;
+let shouldStartTourAfterUnlock = false;
 let tourIndex = 0;
 let currentTourTarget = null;
 
@@ -149,6 +167,289 @@ function notify(message, type = 'info', ttlMs = 3200) {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 200);
   }, ttlMs);
+}
+
+function isWebAuthnSupported() {
+  return Boolean(window.PublicKeyCredential && navigator.credentials);
+}
+
+function bytesToBase64url(bytes) {
+  let binary = '';
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64urlToBytes(value) {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64 + '==='.slice((base64.length + 3) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function randomChallenge(length = 32) {
+  return crypto.getRandomValues(new Uint8Array(length));
+}
+
+function isPinValid(pin) {
+  return /^\d{4,8}$/.test(pin);
+}
+
+async function hashPin(pin) {
+  const source = new TextEncoder().encode(pin);
+  const digest = await crypto.subtle.digest('SHA-256', source);
+  return bytesToBase64url(new Uint8Array(digest));
+}
+
+function recomputeLockEnabled() {
+  lockEnabled = Boolean(lockPinHash || (lockBiometricEnabled && lockBiometricCredentialId));
+}
+
+function renderLockStatusHint(message = '') {
+  if (!lockStatusHint) return;
+  const pinState = lockPinHash ? 'PIN enabled' : 'PIN disabled';
+  const biometricState = lockBiometricEnabled ? 'Biometric enabled' : 'Biometric disabled';
+  lockStatusHint.textContent = message || `${pinState}. ${biometricState}.`;
+  if (unlockBiometricBtn) {
+    unlockBiometricBtn.disabled = !lockBiometricEnabled || !lockBiometricCredentialId;
+  }
+  if (disableBiometric) {
+    disableBiometric.disabled = !lockBiometricEnabled;
+  }
+}
+
+function showLockOverlay(message = '') {
+  if (!lockOverlay || !lockEnabled) return;
+  lockOverlay.classList.remove('hidden');
+  if (unlockPinInput) {
+    unlockPinInput.value = '';
+    unlockPinInput.focus();
+  }
+  if (unlockHint) {
+    unlockHint.textContent =
+      message || (lockBiometricEnabled ? 'Enter your PIN or use biometrics.' : 'Enter your PIN to continue.');
+  }
+}
+
+function hideLockOverlay() {
+  if (!lockOverlay) return;
+  lockOverlay.classList.add('hidden');
+}
+
+async function savePinLockSetting() {
+  const pin = lockPinInput?.value?.trim() || '';
+  if (!isPinValid(pin)) {
+    renderLockStatusHint('PIN must be 4 to 8 digits.');
+    notify('PIN must be 4 to 8 digits.', 'error');
+    return;
+  }
+
+  lockPinHash = await hashPin(pin);
+  await setSetting('lockPinHash', lockPinHash);
+  recomputeLockEnabled();
+  if (lockPinInput) lockPinInput.value = '';
+  renderLockStatusHint('PIN saved. Privacy lock is active.');
+  notify('PIN lock enabled.', 'success');
+}
+
+async function clearLockSettings() {
+  lockPinHash = '';
+  lockBiometricEnabled = false;
+  lockBiometricCredentialId = '';
+  await Promise.all([
+    setSetting('lockPinHash', ''),
+    setSetting('lockBiometricEnabled', false),
+    setSetting('lockBiometricCredentialId', ''),
+  ]);
+  recomputeLockEnabled();
+  hideLockOverlay();
+  renderLockStatusHint('Privacy lock disabled.');
+  notify('Privacy lock disabled.', 'success');
+}
+
+async function enrollBiometricLock() {
+  if (!isWebAuthnSupported()) {
+    notify('Biometric unlock is not supported in this browser.', 'error');
+    return;
+  }
+  try {
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge: randomChallenge(32),
+        rp: { name: 'Expense Whisper' },
+        user: {
+          id: randomChallenge(16),
+          name: 'local-user',
+          displayName: 'Expense Whisper User',
+        },
+        pubKeyCredParams: [
+          { type: 'public-key', alg: -7 },
+          { type: 'public-key', alg: -257 },
+        ],
+        timeout: 60000,
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          residentKey: 'preferred',
+          userVerification: 'required',
+        },
+        attestation: 'none',
+      },
+    });
+
+    if (!credential) {
+      notify('Biometric enrollment was cancelled.', 'error');
+      return;
+    }
+
+    lockBiometricCredentialId = bytesToBase64url(new Uint8Array(credential.rawId));
+    lockBiometricEnabled = true;
+    await Promise.all([
+      setSetting('lockBiometricEnabled', true),
+      setSetting('lockBiometricCredentialId', lockBiometricCredentialId),
+    ]);
+    recomputeLockEnabled();
+    renderLockStatusHint('Biometric unlock enabled.');
+    notify('Biometric unlock enabled.', 'success');
+  } catch (error) {
+    notify(error.message || 'Unable to enable biometric unlock.', 'error');
+  }
+}
+
+async function disableBiometricLock() {
+  lockBiometricEnabled = false;
+  lockBiometricCredentialId = '';
+  await Promise.all([
+    setSetting('lockBiometricEnabled', false),
+    setSetting('lockBiometricCredentialId', ''),
+  ]);
+  recomputeLockEnabled();
+  renderLockStatusHint('Biometric unlock disabled.');
+  notify('Biometric unlock disabled.', 'success');
+}
+
+async function unlockWithPin() {
+  const pin = unlockPinInput?.value?.trim() || '';
+  if (!isPinValid(pin) || !lockPinHash) {
+    if (unlockHint) unlockHint.textContent = 'Enter a valid PIN.';
+    return false;
+  }
+  const hashed = await hashPin(pin);
+  if (hashed !== lockPinHash) {
+    if (unlockHint) unlockHint.textContent = 'Incorrect PIN. Try again.';
+    return false;
+  }
+  hideLockOverlay();
+  if (unlockHint) unlockHint.textContent = 'Unlocked.';
+  return true;
+}
+
+async function unlockWithBiometric() {
+  if (!lockBiometricEnabled || !lockBiometricCredentialId) {
+    if (unlockHint) unlockHint.textContent = 'Biometric unlock is not enabled yet.';
+    return false;
+  }
+  if (!isWebAuthnSupported()) {
+    if (unlockHint) unlockHint.textContent = 'Biometric unlock is not supported in this browser.';
+    return false;
+  }
+
+  try {
+    const challenge = randomChallenge(32);
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        allowCredentials: [
+          {
+            id: base64urlToBytes(lockBiometricCredentialId),
+            type: 'public-key',
+          },
+        ],
+        userVerification: 'required',
+        timeout: 60000,
+      },
+    });
+
+    if (!assertion) {
+      if (unlockHint) unlockHint.textContent = 'Biometric unlock was cancelled.';
+      return false;
+    }
+
+    const response = assertion.response;
+    const clientDataText = new TextDecoder().decode(response.clientDataJSON);
+    const clientData = JSON.parse(clientDataText);
+    const expectedChallenge = bytesToBase64url(challenge);
+    if (clientData.type !== 'webauthn.get') throw new Error('Unexpected authenticator response type.');
+    if (clientData.origin !== window.location.origin) throw new Error('Invalid origin in authenticator response.');
+    if (clientData.challenge !== expectedChallenge) throw new Error('Authenticator challenge mismatch.');
+
+    hideLockOverlay();
+    if (unlockHint) unlockHint.textContent = 'Unlocked.';
+    return true;
+  } catch (error) {
+    if (unlockHint) unlockHint.textContent = error.message || 'Biometric unlock failed.';
+    return false;
+  }
+}
+
+function initPrivacyLock() {
+  if (!lockForm) return;
+
+  savePinLock?.addEventListener('click', () => {
+    savePinLockSetting();
+  });
+
+  clearPinLock?.addEventListener('click', () => {
+    if (!lockEnabled) return;
+    if (!confirm('This will disable PIN and biometric lock. Continue?')) return;
+    clearLockSettings();
+  });
+
+  enableBiometric?.addEventListener('click', () => {
+    enrollBiometricLock();
+  });
+
+  disableBiometric?.addEventListener('click', () => {
+    disableBiometricLock();
+  });
+
+  lockNow?.addEventListener('click', () => {
+    if (!lockEnabled) {
+      notify('Set a PIN or enable biometrics first.', 'error');
+      return;
+    }
+    showLockOverlay();
+  });
+
+  unlockPinBtn?.addEventListener('click', async () => {
+    const unlocked = await unlockWithPin();
+    if (unlocked && shouldStartTourAfterUnlock) {
+      shouldStartTourAfterUnlock = false;
+      startTour(false);
+    }
+  });
+
+  unlockPinInput?.addEventListener('keydown', async (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const unlocked = await unlockWithPin();
+    if (unlocked && shouldStartTourAfterUnlock) {
+      shouldStartTourAfterUnlock = false;
+      startTour(false);
+    }
+  });
+
+  unlockBiometricBtn?.addEventListener('click', async () => {
+    const unlocked = await unlockWithBiometric();
+    if (unlocked && shouldStartTourAfterUnlock) {
+      shouldStartTourAfterUnlock = false;
+      startTour(false);
+    }
+  });
+
+  if (enableBiometric && !isWebAuthnSupported()) {
+    enableBiometric.disabled = true;
+  }
 }
 
 function buildSelectOptions(select, options) {
@@ -1809,8 +2110,13 @@ async function loadSettings() {
   const savedCurrency = (await getSetting('currency')) || 'USD';
   hasSeenHelp = Boolean(await getSetting('onboardingSeen'));
   hasSeenSplash = Boolean(await getSetting('splashSeen'));
+  lockPinHash = (await getSetting('lockPinHash')) || '';
+  lockBiometricEnabled = Boolean(await getSetting('lockBiometricEnabled'));
+  lockBiometricCredentialId = (await getSetting('lockBiometricCredentialId')) || '';
+  recomputeLockEnabled();
   currentCurrency = savedCurrency;
   buildCurrencyOptions(currencySelect, savedCurrency);
+  renderLockStatusHint();
 }
 
 buildSelectOptions(monthSelect, MONTHS);
@@ -1961,6 +2267,12 @@ expenseGuided.addEventListener('click', () => {
 
 window.addEventListener('online', () => {
   maybeFlushQueue();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && lockEnabled) {
+    showLockOverlay();
+  }
 });
 
 function initTabs() {
@@ -2366,10 +2678,16 @@ loadSettings()
     initTabs();
     initAnalysisSwitch();
     initTour();
+    initPrivacyLock();
     initSplash();
     setDailyPrompt();
     return refreshAll().then(() => {
-      startTour(false);
+      if (lockEnabled) {
+        shouldStartTourAfterUnlock = true;
+        showLockOverlay();
+      } else {
+        startTour(false);
+      }
     });
   })
   .catch((error) => {
